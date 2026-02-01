@@ -617,3 +617,174 @@ class LiveSportsFeed:
                     })
         
         return opportunities
+    
+    # ═══════════════════════════════════════════════════════════════
+    # DYNAMIC MARKET-DRIVEN ESPN SEARCH
+    # ═══════════════════════════════════════════════════════════════
+    
+    def extract_teams_from_market(self, market: Dict) -> List[str]:
+        """
+        Extract team/player names from a Polymarket market question.
+        
+        Examples:
+        - "Will Manchester United win vs Chelsea?" → ["Manchester United", "Chelsea"]
+        - "Lakers vs Celtics - Who wins?" → ["Lakers", "Celtics"]
+        """
+        question = market.get('question', '') or market.get('title', '')
+        teams = []
+        
+        # Common patterns
+        import re
+        
+        # Pattern: "Team A vs Team B" or "Team A v Team B"
+        vs_pattern = r'([A-Z][a-zA-Z\s]+?)\s+(?:vs\.?|v\.?|versus)\s+([A-Z][a-zA-Z\s]+?)(?:\s*[-\?]|$)'
+        match = re.search(vs_pattern, question)
+        if match:
+            teams.extend([match.group(1).strip(), match.group(2).strip()])
+        
+        # Pattern: "Will [Team] win/beat..."
+        will_pattern = r'Will\s+(?:the\s+)?([A-Z][a-zA-Z\s]+?)\s+(?:win|beat|defeat)'
+        match = re.search(will_pattern, question)
+        if match:
+            teams.append(match.group(1).strip())
+        
+        # Known team names lookup
+        known_teams = [
+            # NFL
+            'Chiefs', 'Eagles', 'Cowboys', 'Patriots', '49ers', 'Bills',
+            # NBA  
+            'Lakers', 'Celtics', 'Warriors', 'Nets', 'Heat', 'Bucks', 'Suns',
+            # Football/Soccer
+            'Manchester United', 'Manchester City', 'Liverpool', 'Chelsea', 'Arsenal',
+            'Real Madrid', 'Barcelona', 'Bayern Munich', 'PSG', 'Juventus',
+            # Cricket
+            'India', 'Australia', 'England', 'Pakistan', 'South Africa',
+            'Mumbai Indians', 'Chennai Super Kings', 'RCB', 'KKR',
+        ]
+        
+        for team in known_teams:
+            if team.lower() in question.lower() and team not in teams:
+                teams.append(team)
+        
+        return teams[:2]  # Max 2 teams per market
+    
+    def search_espn_for_team(self, team_name: str, sport: str = 'football') -> Optional[Dict]:
+        """
+        Search ESPN for a specific team's current/upcoming game.
+        
+        This is more targeted than fetching all live games.
+        """
+        sport_endpoints = {
+            'football': 'soccer',
+            'nba': 'basketball/nba',
+            'nfl': 'football/nfl',
+            'cricket': 'cricket',
+            'tennis': 'tennis'
+        }
+        
+        endpoint = sport_endpoints.get(sport, 'soccer')
+        url = f"{self.ESPN_BASE_URL}/{endpoint}/scoreboard"
+        
+        data = self._get_cached_or_fetch(url, f'{sport}_search_{team_name}')
+        
+        if not data:
+            return None
+        
+        # Search for the team in events
+        team_lower = team_name.lower()
+        
+        for event in data.get('events', []):
+            for comp in event.get('competitions', []):
+                for competitor in comp.get('competitors', []):
+                    team_info = competitor.get('team', {})
+                    name = team_info.get('name', '').lower()
+                    display_name = team_info.get('displayName', '').lower()
+                    short_name = team_info.get('shortDisplayName', '').lower()
+                    
+                    if team_lower in name or team_lower in display_name or team_lower in short_name:
+                        # Found the team - return game info
+                        status = event.get('status', {})
+                        competitors = comp.get('competitors', [])
+                        
+                        return {
+                            'game_id': event.get('id'),
+                            'found_team': team_name,
+                            'sport': sport,
+                            'is_live': status.get('type', {}).get('name') == 'STATUS_IN_PROGRESS',
+                            'status': status.get('type', {}).get('description', 'Unknown'),
+                            'home_team': competitors[0].get('team', {}).get('name') if competitors else 'Unknown',
+                            'away_team': competitors[1].get('team', {}).get('name') if len(competitors) > 1 else 'Unknown',
+                            'home_score': int(competitors[0].get('score', 0)) if competitors else 0,
+                            'away_score': int(competitors[1].get('score', 0)) if len(competitors) > 1 else 0,
+                            'game_time': status.get('displayClock', ''),
+                            'period': status.get('period', 0),
+                            'completion_percent': self._estimate_completion(status, sport)
+                        }
+        
+        return None
+    
+    def _estimate_completion(self, status: Dict, sport: str) -> float:
+        """Estimate game completion percentage."""
+        period = status.get('period', 1)
+        
+        if sport == 'football':
+            clock = status.get('displayClock', "0'")
+            try:
+                minute = int(clock.replace("'", "").split()[0])
+                return min(100, (minute / 90) * 100)
+            except:
+                return 50
+        elif sport == 'nba':
+            # 4 quarters
+            return min(100, (period / 4) * 100)
+        elif sport == 'nfl':
+            # 4 quarters
+            return min(100, (period / 4) * 100)
+        
+        return 50
+    
+    def get_game_data_for_markets(self, markets: List[Dict]) -> Dict[str, Dict]:
+        """
+        Given a list of Polymarket markets, find relevant ESPN game data.
+        
+        Returns dict mapping market_id -> game_data
+        """
+        market_games = {}
+        
+        for market in markets:
+            market_id = market.get('id', '')
+            sport = market.get('sport', 'football')
+            
+            # Extract teams from market question
+            teams = self.extract_teams_from_market(market)
+            
+            if not teams:
+                continue
+            
+            # Search for each team
+            for team in teams:
+                game_data = self.search_espn_for_team(team, sport)
+                
+                if game_data:
+                    game_data['market_teams'] = teams
+                    market_games[market_id] = game_data
+                    break  # Found game, no need to search other team
+        
+        return market_games
+    
+    def get_live_game_for_market(self, market: Dict) -> Optional[Dict]:
+        """
+        Get live game data specifically for a Polymarket market.
+        
+        This is the main entry point for market-driven data fetching.
+        """
+        sport = market.get('sport', 'football')
+        teams = self.extract_teams_from_market(market)
+        
+        for team in teams:
+            game = self.search_espn_for_team(team, sport)
+            if game and game.get('is_live'):
+                return game
+        
+        return None
+

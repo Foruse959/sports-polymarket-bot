@@ -438,17 +438,22 @@ def scanner_loop():
         try:
             scan_start = time.time()
             
-            # 1. Get live sports data
-            all_games = sports_feed.get_all_live_games()
-            total_games = sum(len(g) for g in all_games.values())
-            
-            # 2. Detect sports events
-            events = sports_feed.detect_all_events()
-            
-            # 3. Get sports markets from Polymarket
+            # 1. Get sports markets from Polymarket FIRST (market-driven approach)
             markets = polymarket.get_sports_markets(limit=200)
             
-            # 4. Get current prices for position updates
+            # 2. Get game data dynamically based on markets (NEW!)
+            # This searches ESPN for teams mentioned in Polymarket markets
+            market_games = sports_feed.get_game_data_for_markets(markets)
+            live_games_found = sum(1 for g in market_games.values() if g.get('is_live'))
+            
+            # 3. Also get general live games as fallback
+            all_games = sports_feed.get_all_live_games()
+            total_games = sum(len(g) for g in all_games.values()) + live_games_found
+            
+            # 4. Detect sports events
+            events = sports_feed.detect_all_events()
+            
+            # 5. Get current prices for position updates
             current_prices = {}
             for market in markets:
                 market_id = market.get('id', '')
@@ -456,22 +461,27 @@ def scanner_loop():
                 current_prices[market_id] = price
                 market['current_price'] = price
             
-            # 5. Update positions and check exits
+            # 6. Update positions and check exits
             closed_trades = paper_trader.update_positions(current_prices)
             
             # Send alerts for closed trades
             for trade in closed_trades:
                 alerts.alert_trade_closed(trade)
             
-            # 6. Analyze markets with strategies
+            # 7. Analyze markets with strategies
             all_signals = []
             
             for market in markets:
+                market_id = market.get('id', '')
                 sport = market.get('sport', 'unknown')
                 
-                # Get relevant game data
-                sport_games = all_games.get(sport, [])
-                sports_data = {'game': sport_games[0] if sport_games else {}}
+                # Get game data - first try market-specific, then fallback to general
+                game_data = market_games.get(market_id, {})
+                if not game_data:
+                    sport_games = all_games.get(sport, [])
+                    game_data = sport_games[0] if sport_games else {}
+                
+                sports_data = {'game': game_data}
                 
                 # Check for relevant events
                 relevant_events = [e for e in events if e.sport == sport]
@@ -508,7 +518,7 @@ def scanner_loop():
             
             signals_found += len(all_signals)
             
-            # 7. Execute top signals
+            # 8. Execute top signals
             for signal in all_signals[:3]:  # Max 3 trades per scan
                 # Send signal alert
                 alerts.alert_signal(signal)
@@ -519,7 +529,7 @@ def scanner_loop():
                 if trade:
                     alerts.alert_trade_opened(trade)
             
-            # 8. Update scan stats
+            # 9. Update scan stats
             last_scan_time = datetime.now()
             scan_count += 1
             scan_duration = time.time() - scan_start
@@ -527,7 +537,7 @@ def scanner_loop():
             # Log scan summary
             positions_count = len(paper_trader.get_positions())
             print(f"\n📊 Scan #{scan_count} completed in {scan_duration:.1f}s")
-            print(f"   Markets: {len(markets)} | Games: {total_games} | Events: {len(events)}")
+            print(f"   Markets: {len(markets)} | Games: {total_games} | Market-matched: {len(market_games)}")
             print(f"   Signals: {len(all_signals)} | Positions: {positions_count}")
             
             # 9. Send periodic summary
