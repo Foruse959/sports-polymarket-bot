@@ -43,6 +43,7 @@ class Config:
     VOLATILITY_SCALP_ENABLED = os.getenv('VOLATILITY_SCALP_ENABLED', 'true').lower() == 'true'
     LAG_ARBITRAGE_ENABLED = os.getenv('LAG_ARBITRAGE_ENABLED', 'true').lower() == 'true'
     LIQUIDITY_PROVISION_ENABLED = os.getenv('LIQUIDITY_PROVISION_ENABLED', 'false').lower() == 'true'
+    MARKET_ONLY_ENABLED = os.getenv('MARKET_ONLY_ENABLED', 'true').lower() == 'true'  # Enabled by default!
     
     # ═══════════════════════════════════════════════════════════════════
     # SPORT-SPECIFIC PARAMETERS

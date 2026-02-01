@@ -837,6 +837,140 @@ class LiquidityProvisionStrategy(BaseStrategy):
         return False, ""
 
 
+class MarketOnlyStrategy(BaseStrategy):
+    """
+    Strategy 9: Market-Only Trading (NO ESPN DATA NEEDED)
+    
+    Trades based purely on Polymarket data:
+    - Buy underpriced events (low probability that seem fair)
+    - Sell overpriced favorites
+    - Trade wide spreads for quick scalps
+    
+    Edge: Works 24/7 without live sports data
+    Sports: All
+    Expected hold: Variable
+    """
+    
+    def __init__(self):
+        super().__init__(
+            name="Market Only",
+            description="Trade based on market data alone (no ESPN needed)"
+        )
+    
+    def analyze(self, market: Dict, sports_data: Dict,
+                event: Optional[Dict] = None) -> Optional[TradeSignal]:
+        
+        current_price = market.get('current_price', 0.5)
+        question = market.get('question', '').lower()
+        
+        # Skip if price is exactly 0.5 (default/unknown)
+        if current_price == 0.5:
+            return None
+        
+        # Strategy 1: Extreme favorites (>90%) - SELL
+        # Markets at 90%+ often have fat tail risk
+        if current_price >= 0.92:
+            return TradeSignal(
+                strategy=self.name,
+                signal_type=SignalType.SELL,
+                market_id=market.get('id', market.get('condition_id', '')),
+                market_question=market.get('question', ''),
+                sport=market.get('sport', 'unknown'),
+                entry_price=current_price,
+                target_price=current_price * 0.97,  # 3% drop
+                stop_loss_price=min(0.99, current_price * 1.02),
+                confidence=0.55 + (current_price - 0.90) * 2,  # Higher price = higher confidence
+                size_usd=self.calculate_size(0.55, Config.MAX_POSITION_USD * 0.3),
+                rationale=f"Selling extreme favorite at {current_price*100:.0f}%",
+                metadata={
+                    'entry_price': current_price,
+                    'strategy_type': 'extreme_favorite_fade'
+                }
+            )
+        
+        # Strategy 2: Deep underdogs (<12%) - BUY for asymmetric risk
+        # Very low probability events are often underpriced
+        if current_price <= 0.12 and current_price > 0.03:
+            # Only if it's a "win" market (not weird derivatives)
+            if 'win' in question or 'beat' in question or 'defeat' in question:
+                return TradeSignal(
+                    strategy=self.name,
+                    signal_type=SignalType.BUY,
+                    market_id=market.get('id', market.get('condition_id', '')),
+                    market_question=market.get('question', ''),
+                    sport=market.get('sport', 'unknown'),
+                    entry_price=current_price,
+                    target_price=current_price * 1.5,  # 50% gain target
+                    stop_loss_price=current_price * 0.6,  # 40% stop
+                    confidence=0.50,
+                    size_usd=self.calculate_size(0.45, Config.MAX_POSITION_USD * 0.2),
+                    rationale=f"Buying deep underdog at {current_price*100:.1f}% for asymmetric upside",
+                    metadata={
+                        'entry_price': current_price,
+                        'strategy_type': 'underdog_value'
+                    }
+                )
+        
+        # Strategy 3: Mid-range volatility opportunity (40-60%)
+        # 50/50 markets often have mispricing opportunities
+        orderbook = market.get('orderbook', {})
+        spread_percent = orderbook.get('spread_percent', 0)
+        
+        if spread_percent >= 4.0 and 0.35 <= current_price <= 0.65:
+            best_bid = orderbook.get('best_bid', current_price * 0.97)
+            best_ask = orderbook.get('best_ask', current_price * 1.03)
+            
+            return TradeSignal(
+                strategy=self.name,
+                signal_type=SignalType.BUY,
+                market_id=market.get('id', market.get('condition_id', '')),
+                market_question=market.get('question', ''),
+                sport=market.get('sport', 'unknown'),
+                entry_price=best_bid,  # Buy at bid
+                target_price=best_ask * 0.97,  # Sell near ask
+                stop_loss_price=best_bid * 0.95,
+                confidence=0.55,
+                size_usd=self.calculate_size(0.55, Config.MAX_POSITION_USD * 0.25),
+                rationale=f"Wide spread scalp ({spread_percent:.1f}%) at 50/50 market",
+                metadata={
+                    'spread_percent': spread_percent,
+                    'strategy_type': 'spread_scalp'
+                }
+            )
+        
+        return None
+    
+    def should_exit(self, position: Dict, current_price: float,
+                   sports_data: Dict) -> Tuple[bool, str]:
+        entry_price = position.get('entry_price', current_price)
+        direction = position.get('direction', 'BUY')
+        strategy_type = position.get('metadata', {}).get('strategy_type', '')
+        
+        if direction == 'BUY':
+            profit_percent = ((current_price - entry_price) / entry_price) * 100
+        else:
+            profit_percent = ((entry_price - current_price) / entry_price) * 100
+        
+        # Different exit rules based on strategy type
+        if strategy_type == 'extreme_favorite_fade':
+            if profit_percent >= 3:
+                return True, f"Favorite fade profit (+{profit_percent:.1f}%)"
+            if profit_percent <= -2:
+                return True, f"Favorite fade stop ({profit_percent:.1f}%)"
+        elif strategy_type == 'underdog_value':
+            if profit_percent >= 40:
+                return True, f"Underdog value hit (+{profit_percent:.1f}%)"
+            if profit_percent <= -35:
+                return True, f"Underdog stop ({profit_percent:.1f}%)"
+        else:  # spread_scalp
+            if profit_percent >= 3:
+                return True, f"Spread scalp profit (+{profit_percent:.1f}%)"
+            if profit_percent <= -3:
+                return True, f"Spread scalp stop ({profit_percent:.1f}%)"
+        
+        return False, ""
+
+
 class SportsStrategyEngine:
     """
     Main engine that coordinates all trading strategies.
@@ -852,6 +986,7 @@ class SportsStrategyEngine:
             VolatilityScalpStrategy(),
             LagArbitrageStrategy(),
             LiquidityProvisionStrategy(),
+            MarketOnlyStrategy(),  # NEW: Works without ESPN data!
         ]
         
         print(f"✅ Strategy Engine initialized with {len(self.strategies)} strategies")
@@ -870,6 +1005,7 @@ class SportsStrategyEngine:
             'Volatility Scalp': Config.VOLATILITY_SCALP_ENABLED,
             'Lag Arbitrage': Config.LAG_ARBITRAGE_ENABLED,
             'Liquidity Provision': Config.LIQUIDITY_PROVISION_ENABLED,
+            'Market Only': getattr(Config, 'MARKET_ONLY_ENABLED', True),  # Enabled by default!
         }
         return name_map.get(strategy.name, False)
     
