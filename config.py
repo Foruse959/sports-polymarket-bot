@@ -94,6 +94,8 @@ class Config:
     ODDS_API_KEY = os.getenv('ODDS_API_KEY', '')
     SPORTRADAR_API_KEY = os.getenv('SPORTRADAR_API_KEY', '')
     CRICBUZZ_API_KEY = os.getenv('CRICBUZZ_API_KEY', '')
+    GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')  # FREE! Get key: https://console.groq.com
+    FOOTBALL_DATA_API_KEY = os.getenv('FOOTBALL_DATA_API_KEY', '')  # Free: 10 req/min
     
     # ═══════════════════════════════════════════════════════════════════
     # DASHBOARD & DEBUGGING
