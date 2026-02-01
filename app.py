@@ -564,13 +564,14 @@ if __name__ == '__main__':
     # Start scanner
     start_scanner()
     
-    # Run Flask
-    port = Config.DASHBOARD_PORT
+    # Use PORT from environment (Railway sets this) or fallback to config
+    port = int(os.environ.get('PORT', Config.DASHBOARD_PORT))
     print(f"\n🌐 Dashboard running at http://localhost:{port}")
     
     app.run(
         host='0.0.0.0',
         port=port,
-        debug=Config.DEBUG_MODE,
+        debug=False,  # Disable debug in production
         use_reloader=False  # Disable reloader to prevent duplicate scanner
     )
+
