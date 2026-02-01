@@ -8,9 +8,8 @@ python-dotenv==1.0.0
 aiohttp==3.9.1
 httpx==0.25.2
 
-# Polymarket
+# Polymarket (compatible versions)
 py-clob-client==0.13.0
-web3==6.11.3
 
-# Utilities
+# Production server
 gunicorn==21.2.0
