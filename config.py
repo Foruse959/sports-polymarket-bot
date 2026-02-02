@@ -155,6 +155,14 @@ class Config:
     POLYMARKET_GAMMA_URL = 'https://gamma-api.polymarket.com'
     POLYMARKET_CLOB_URL = 'https://clob.polymarket.com'
     
+    # ═══════════════════════════════════════════════════════════════════
+    # SPORTS MARKET SETTINGS
+    # ═══════════════════════════════════════════════════════════════════
+    INCLUDE_UPCOMING_MARKETS = os.getenv('INCLUDE_UPCOMING_MARKETS', 'true').lower() == 'true'
+    UPCOMING_HOURS_AHEAD = int(os.getenv('UPCOMING_HOURS_AHEAD', '24'))
+    PRIORITY_SPORTS = [s.strip() for s in os.getenv('PRIORITY_SPORTS', 'cricket,football,nba,nfl,tennis,ufc').split(',')]
+    FETCH_FUTURES_MARKETS = os.getenv('FETCH_FUTURES_MARKETS', 'true').lower() == 'true'  # Season-long bets
+    
     @classmethod
     def is_paper_mode(cls) -> bool:
         """Check if running in paper trading mode."""
