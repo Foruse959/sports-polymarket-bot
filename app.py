@@ -8,6 +8,7 @@ import os
 import sys
 import threading
 import time
+import asyncio
 from datetime import datetime
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -23,6 +24,14 @@ from core.sports_strategies import SportsStrategyEngine
 from trading.paper_trader import PaperTrader
 from alerts.telegram_alerts import TelegramAlerts
 
+# NEW: Import dynamic components
+from core.dynamic_engine import DynamicStrategyEngine
+from core.arbitrage_detector import ArbitrageDetector
+from core.whale_tracker import WhaleTracker
+from core.adaptive_thresholds import AdaptiveThresholds
+from data.multi_source import DataAggregator
+from trading.smart_executor import SmartExecutor
+
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -35,6 +44,42 @@ sports_feed = LiveSportsFeed()
 strategy_engine = SportsStrategyEngine()
 paper_trader = PaperTrader()
 alerts = TelegramAlerts()
+
+# NEW: Initialize dynamic components with graceful degradation
+try:
+    print("\n🚀 Initializing dynamic autonomous systems...")
+    
+    # Initialize components
+    arbitrage_detector = ArbitrageDetector() if Config.ARB_ENABLED else None
+    whale_tracker = WhaleTracker() if Config.WHALE_TRACKING_ENABLED else None
+    adaptive_thresholds = AdaptiveThresholds() if Config.ADAPTIVE_ENABLED else None
+    data_aggregator = DataAggregator()
+    smart_executor = SmartExecutor(polymarket_client=polymarket)
+    
+    # Initialize dynamic engine (wraps existing strategies)
+    if Config.CASCADE_ENABLED:
+        dynamic_engine = DynamicStrategyEngine(
+            base_strategies=strategy_engine.strategies,
+            config=Config,
+            arbitrage_detector=arbitrage_detector,
+            adaptive_thresholds=adaptive_thresholds
+        )
+        print("✅ Dynamic Strategy Engine: Enabled")
+    else:
+        dynamic_engine = None
+        print("⚪ Dynamic Strategy Engine: Disabled (using basic engine)")
+    
+    print("✅ All dynamic systems initialized successfully\n")
+    
+except Exception as e:
+    print(f"⚠️ Dynamic engine initialization failed: {e}")
+    print("⚠️ Falling back to basic engine")
+    dynamic_engine = None
+    arbitrage_detector = None
+    whale_tracker = None
+    adaptive_thresholds = None
+    data_aggregator = None
+    smart_executor = None
 
 # State
 bot_running = False
@@ -245,6 +290,32 @@ DASHBOARD_HTML = '''
                 Loading risk status...
             </div>
         </div>
+        
+        <div class="section">
+            <h2>🤖 Dynamic Autonomous Systems</h2>
+            <div id="dynamic-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px">
+                <div style="background:rgba(255,255,255,0.03);padding:15px;border-radius:8px">
+                    <div style="font-size:1.5em;margin-bottom:5px">🔄</div>
+                    <div style="font-size:1.2em;font-weight:bold" id="cascade-signals">-</div>
+                    <div style="color:#888;font-size:0.85em">Cascade Signals</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);padding:15px;border-radius:8px">
+                    <div style="font-size:1.5em;margin-bottom:5px">🎯</div>
+                    <div style="font-size:1.2em;font-weight:bold" id="arb-opportunities">-</div>
+                    <div style="color:#888;font-size:0.85em">Arb Opportunities</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);padding:15px;border-radius:8px">
+                    <div style="font-size:1.5em;margin-bottom:5px">🐋</div>
+                    <div style="font-size:1.2em;font-weight:bold" id="whale-count">-</div>
+                    <div style="color:#888;font-size:0.85em">Active Whales</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);padding:15px;border-radius:8px">
+                    <div style="font-size:1.5em;margin-bottom:5px">📊</div>
+                    <div style="font-size:1.2em;font-weight:bold" id="adaptive-mode">-</div>
+                    <div style="color:#888;font-size:0.85em">Adaptive Mode</div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script>
@@ -331,8 +402,42 @@ DASHBOARD_HTML = '''
                 riskDiv.innerHTML = riskHtml;
                 riskDiv.className = 'risk-status ' + (risk.kill_switch_active ? 'risk-danger' : risk.loss_streak > 2 ? 'risk-warning' : 'risk-ok');
                 
+                // Fetch and update dynamic stats
+                fetchDynamicStats();
+                
             } catch (e) {
                 console.error('Error fetching data:', e);
+            }
+        }
+        
+        async function fetchDynamicStats() {
+            try {
+                const res = await fetch('/api/dynamic_stats');
+                const data = await res.json();
+                
+                // Update cascade stats
+                if (data.cascade) {
+                    document.getElementById('cascade-signals').textContent = data.cascade.signals_found || 0;
+                }
+                
+                // Update arbitrage stats
+                if (data.arbitrage) {
+                    document.getElementById('arb-opportunities').textContent = data.arbitrage.opportunities_found_today || 0;
+                }
+                
+                // Update whale tracker stats
+                if (data.whale_tracker) {
+                    document.getElementById('whale-count').textContent = data.whale_tracker.active_whales || 0;
+                }
+                
+                // Update adaptive mode
+                if (data.adaptive) {
+                    const mode = data.adaptive.emergency_mode ? '🚨 Emergency' : '✅ Normal';
+                    document.getElementById('adaptive-mode').textContent = mode;
+                }
+                
+            } catch (e) {
+                console.error('Error fetching dynamic stats:', e);
             }
         }
         
@@ -404,6 +509,34 @@ def api_strategies():
     })
 
 
+@app.route('/api/dynamic_stats')
+def api_dynamic_stats():
+    """Get stats from dynamic autonomous systems."""
+    stats = {}
+    
+    if dynamic_engine:
+        stats['cascade'] = dynamic_engine.get_stats()
+    
+    if arbitrage_detector:
+        stats['arbitrage'] = arbitrage_detector.get_stats()
+    
+    if whale_tracker:
+        stats['whale_tracker'] = whale_tracker.get_stats()
+        stats['whale_profiles'] = whale_tracker.get_whale_profiles()
+    
+    if adaptive_thresholds:
+        stats['adaptive'] = adaptive_thresholds.get_stats()
+        stats['strategy_performance'] = adaptive_thresholds.get_strategy_stats()
+    
+    if data_aggregator:
+        stats['data_sources'] = data_aggregator.get_source_health()
+    
+    if smart_executor:
+        stats['execution'] = smart_executor.get_stats()
+    
+    return jsonify(stats)
+
+
 @app.route('/health')
 def health():
     """Health check endpoint."""
@@ -464,6 +597,13 @@ def scanner_loop():
             # 6. Update positions and check exits
             closed_trades = paper_trader.update_positions(current_prices)
             
+            # Update adaptive thresholds with closed trade results
+            if adaptive_thresholds and closed_trades:
+                for trade in closed_trades:
+                    strategy_name = trade.get('strategy', 'Unknown')
+                    pnl = trade.get('pnl', 0)
+                    adaptive_thresholds.record_trade(strategy_name, pnl)
+            
             # Send alerts for closed trades
             for trade in closed_trades:
                 alerts.alert_trade_closed(trade)
@@ -471,50 +611,82 @@ def scanner_loop():
             # 7. Analyze markets with strategies
             all_signals = []
             
-            for market in markets:
-                market_id = market.get('id', '')
-                sport = market.get('sport', 'unknown')
+            # NEW: Use dynamic cascade engine if available
+            if dynamic_engine:
+                print(f"\n🔄 Running dynamic cascade scan...")
                 
-                # Get game data - first try market-specific, then fallback to general
-                game_data = market_games.get(market_id, {})
-                if not game_data:
-                    sport_games = all_games.get(sport, [])
-                    game_data = sport_games[0] if sport_games else {}
+                # Prepare sports data for cascade
+                sports_data = {
+                    'market_games': market_games,
+                    'all_games': all_games
+                }
                 
-                sports_data = {'game': game_data}
-                
-                # Check for relevant events
-                relevant_events = [e for e in events if e.sport == sport]
-                event_dict = None
-                if relevant_events:
-                    e = relevant_events[0]
-                    event_dict = {
-                        'event_type': e.event_type.value,
-                        'team': e.team,
-                        'game_time': e.game_time,
-                        'details': e.details
-                    }
-                
-                # Run strategy analysis
-                signals = strategy_engine.analyze_market(market, sports_data, event_dict)
-                
-                for signal in signals:
-                    # Convert TradeSignal to dict
-                    signal_dict = {
-                        'strategy': signal.strategy,
-                        'signal_type': signal.signal_type.value,
-                        'market_id': signal.market_id,
-                        'market_question': signal.market_question,
-                        'sport': signal.sport,
-                        'entry_price': signal.entry_price,
-                        'target_price': signal.target_price,
-                        'stop_loss_price': signal.stop_loss_price,
-                        'confidence': signal.confidence,
-                        'size_usd': signal.size_usd,
-                        'rationale': signal.rationale,
-                        'metadata': signal.metadata
-                    }
-                    all_signals.append(signal_dict)
+                # Run cascade scan (async compatible)
+                try:
+                    # Create event loop if needed
+                    try:
+                        loop = asyncio.get_event_loop()
+                    except RuntimeError:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                    
+                    # Run cascade scan
+                    cascade_signals = loop.run_until_complete(
+                        dynamic_engine.cascade_scan(markets, sports_data, events)
+                    )
+                    all_signals.extend(cascade_signals)
+                    
+                except Exception as e:
+                    print(f"⚠️ Dynamic cascade error: {e}")
+                    # Fall back to traditional scanning
+                    print("⚠️ Falling back to traditional strategy scan...")
+            
+            # Fallback: Use traditional strategy engine
+            if not all_signals or not dynamic_engine:
+                for market in markets:
+                    market_id = market.get('id', '')
+                    sport = market.get('sport', 'unknown')
+                    
+                    # Get game data - first try market-specific, then fallback to general
+                    game_data = market_games.get(market_id, {})
+                    if not game_data:
+                        sport_games = all_games.get(sport, [])
+                        game_data = sport_games[0] if sport_games else {}
+                    
+                    sports_data = {'game': game_data}
+                    
+                    # Check for relevant events
+                    relevant_events = [e for e in events if e.sport == sport]
+                    event_dict = None
+                    if relevant_events:
+                        e = relevant_events[0]
+                        event_dict = {
+                            'event_type': e.event_type.value,
+                            'team': e.team,
+                            'game_time': e.game_time,
+                            'details': e.details
+                        }
+                    
+                    # Run strategy analysis
+                    signals = strategy_engine.analyze_market(market, sports_data, event_dict)
+                    
+                    for signal in signals:
+                        # Convert TradeSignal to dict
+                        signal_dict = {
+                            'strategy': signal.strategy,
+                            'signal_type': signal.signal_type.value,
+                            'market_id': signal.market_id,
+                            'market_question': signal.market_question,
+                            'sport': signal.sport,
+                            'entry_price': signal.entry_price,
+                            'target_price': signal.target_price,
+                            'stop_loss_price': signal.stop_loss_price,
+                            'confidence': signal.confidence,
+                            'size_usd': signal.size_usd,
+                            'rationale': signal.rationale,
+                            'metadata': signal.metadata
+                        }
+                        all_signals.append(signal_dict)
             
             signals_found += len(all_signals)
             
