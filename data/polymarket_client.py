@@ -14,6 +14,10 @@ from config import Config
 class PolymarketClient:
     """Client for Polymarket Gamma and CLOB APIs."""
     
+    # Constants for API v2 methods
+    SERIES_MATCH_KEYWORD_COUNT = 5  # Number of keywords to check when matching series
+    FALLBACK_THRESHOLD = 10  # Minimum markets before fallback to keyword filtering
+    
     def __init__(self):
         self.gamma_url = Config.POLYMARKET_GAMMA_URL
         self.clob_url = Config.POLYMARKET_CLOB_URL
@@ -482,11 +486,11 @@ class PolymarketClient:
         try:
             from datetime import datetime, timedelta
             
-            # Calculate end time
+            # Calculate end time (events ending within the next X hours)
             end_time = datetime.now() + timedelta(hours=hours_ahead)
             end_timestamp = int(end_time.timestamp())
             
-            # Fetch events with end_date_min filter
+            # Fetch events ending before end_timestamp (within the next X hours)
             url = f"{self.gamma_url}/events?active=true&closed=false&end_date_max={end_timestamp}"
             response = self.session.get(url, timeout=30)
             
@@ -520,8 +524,7 @@ class PolymarketClient:
             
             if sports_series:
                 # Get priority sports from config
-                priority_sports = getattr(Config, 'PRIORITY_SPORTS', 
-                                         ['cricket', 'football', 'nba', 'nfl', 'tennis', 'ufc'])
+                priority_sports = Config.PRIORITY_SPORTS
                 
                 print(f"🎯 Priority sports: {', '.join(priority_sports)}")
                 
@@ -535,7 +538,7 @@ class PolymarketClient:
                     for sport in priority_sports:
                         if sport in series_name or any(
                             keyword in series_name 
-                            for keyword in self.sport_keywords.get(sport, [])[:5]  # Check first 5 keywords
+                            for keyword in self.sport_keywords.get(sport, [])[:self.SERIES_MATCH_KEYWORD_COUNT]
                         ):
                             matched_sport = sport
                             break
@@ -564,7 +567,7 @@ class PolymarketClient:
             print("⚠️ Falling back to traditional keyword filtering...")
         
         # Fallback: Use traditional keyword filtering if /sports method didn't work well
-        if len(all_markets) < 10:
+        if len(all_markets) < self.FALLBACK_THRESHOLD:
             print(f"⚠️ Only found {len(all_markets)} markets via /sports, using fallback...")
             fallback_markets = self.get_sports_markets(limit=limit)
             
@@ -576,8 +579,8 @@ class PolymarketClient:
         
         # Include upcoming markets if configured
         try:
-            if getattr(Config, 'INCLUDE_UPCOMING_MARKETS', True):
-                hours_ahead = getattr(Config, 'UPCOMING_HOURS_AHEAD', 24)
+            if Config.INCLUDE_UPCOMING_MARKETS:
+                hours_ahead = Config.UPCOMING_HOURS_AHEAD
                 upcoming = self.get_upcoming_markets(hours_ahead=hours_ahead)
                 
                 # Add to all_markets, avoiding duplicates
