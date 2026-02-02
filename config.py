@@ -96,6 +96,51 @@ class Config:
     CRICBUZZ_API_KEY = os.getenv('CRICBUZZ_API_KEY', '')
     GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')  # FREE! Get key: https://console.groq.com
     FOOTBALL_DATA_API_KEY = os.getenv('FOOTBALL_DATA_API_KEY', '')  # Free: 10 req/min
+    POLYGONSCAN_API_KEY = os.getenv('POLYGONSCAN_API_KEY', '')  # Optional
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # DYNAMIC ENGINE SETTINGS
+    # ═══════════════════════════════════════════════════════════════════
+    CASCADE_ENABLED = os.getenv('CASCADE_ENABLED', 'true').lower() == 'true'
+    CASCADE_THRESHOLD_DECAY = float(os.getenv('CASCADE_THRESHOLD_DECAY', '0.8'))  # 20% reduction per retry
+    CASCADE_MAX_RETRIES = int(os.getenv('CASCADE_MAX_RETRIES', '3'))
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # ARBITRAGE SETTINGS
+    # ═══════════════════════════════════════════════════════════════════
+    ARB_ENABLED = os.getenv('ARB_ENABLED', 'true').lower() == 'true'
+    ARB_MIN_EDGE_CENTS = float(os.getenv('ARB_MIN_EDGE_CENTS', '1.5'))
+    ARB_SCAN_RESOLVED = os.getenv('ARB_SCAN_RESOLVED', 'true').lower() == 'true'
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # WHALE TRACKING (works with zero config!)
+    # ═══════════════════════════════════════════════════════════════════
+    WHALE_TRACKING_ENABLED = os.getenv('WHALE_TRACKING_ENABLED', 'true').lower() == 'true'
+    WHALE_WALLETS = [w.strip() for w in os.getenv('WHALE_WALLETS', '').split(',') if w.strip()]  # Optional!
+    WHALE_AUTO_DISCOVER = os.getenv('WHALE_AUTO_DISCOVER', 'true').lower() == 'true'  # Find whales automatically
+    WHALE_MIN_TRADE_USD = float(os.getenv('WHALE_MIN_TRADE_USD', '500'))
+    WHALE_MIN_WIN_RATE = float(os.getenv('WHALE_MIN_WIN_RATE', '0.65'))
+    WHALE_COPY_DELAY_SECONDS = int(os.getenv('WHALE_COPY_DELAY_SECONDS', '30'))
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # ADAPTIVE SYSTEM
+    # ═══════════════════════════════════════════════════════════════════
+    ADAPTIVE_ENABLED = os.getenv('ADAPTIVE_ENABLED', 'true').lower() == 'true'
+    ADAPTIVE_LOOKBACK_TRADES = int(os.getenv('ADAPTIVE_LOOKBACK_TRADES', '50'))
+    ADAPTIVE_EMERGENCY_HOURS = int(os.getenv('ADAPTIVE_EMERGENCY_HOURS', '6'))  # Loosen if no trades
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # DATA SOURCES (all optional!)
+    # ═══════════════════════════════════════════════════════════════════
+    USE_WEBSOCKET = os.getenv('USE_WEBSOCKET', 'true').lower() == 'true'
+    WEBSOCKET_FALLBACK_POLL_SECONDS = int(os.getenv('WEBSOCKET_FALLBACK_POLL_SECONDS', '5'))
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # FREE SPORTS DATA SOURCES
+    # ═══════════════════════════════════════════════════════════════════
+    # These are FREE and don't need API keys
+    ESPN_ENABLED = os.getenv('ESPN_ENABLED', 'true').lower() == 'true'
+    FREE_SPORTS_APIS = os.getenv('FREE_SPORTS_APIS', 'true').lower() == 'true'
     
     # ═══════════════════════════════════════════════════════════════════
     # DASHBOARD & DEBUGGING
