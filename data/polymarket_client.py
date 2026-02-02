@@ -576,6 +576,10 @@ class PolymarketClient:
             for market in fallback_markets:
                 if market.get('id') not in existing_ids:
                     all_markets.append(market)
+                    existing_ids.add(market.get('id'))  # Update the set
+        else:
+            # Create the set for later use even if we didn't use fallback
+            existing_ids = {m.get('id') for m in all_markets}
         
         # Include upcoming markets if configured
         try:
@@ -583,14 +587,14 @@ class PolymarketClient:
                 hours_ahead = Config.UPCOMING_HOURS_AHEAD
                 upcoming = self.get_upcoming_markets(hours_ahead=hours_ahead)
                 
-                # Add to all_markets, avoiding duplicates
-                existing_ids = {m.get('id') for m in all_markets}
+                # Add to all_markets, avoiding duplicates (reuse existing_ids)
                 for market in upcoming:
                     if market.get('id') not in existing_ids:
                         # Detect sport for upcoming markets
                         market['sport'] = self._detect_sport(market.get('question', ''))
                         market['is_live'] = False
                         all_markets.append(market)
+                        existing_ids.add(market.get('id'))  # Update the set
                 
                 print(f"✅ Added {len([m for m in all_markets if not m.get('is_live')])} upcoming markets")
         except Exception as e:
