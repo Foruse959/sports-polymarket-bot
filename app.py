@@ -572,7 +572,8 @@ def scanner_loop():
             scan_start = time.time()
             
             # 1. Get sports markets from Polymarket FIRST (market-driven approach)
-            markets = polymarket.get_sports_markets(limit=200)
+            # Use new improved method that fetches from /sports endpoint
+            markets = polymarket.get_sports_markets_v2(limit=500)
             
             # 2. Get game data dynamically based on markets (NEW!)
             # This searches ESPN for teams mentioned in Polymarket markets
