@@ -181,7 +181,15 @@ class AdaptiveThresholds:
         return final_multiplier
     
     def _check_emergency_mode(self):
-        """Check if we should enter emergency mode."""
+        """
+        Check if we should enter emergency mode.
+        
+        Emergency mode progressively loosens thresholds when no trades are executed:
+        - Activates after ADAPTIVE_EMERGENCY_HOURS without trades
+        - Reduces threshold multiplier by 5% per hour (makes thresholds looser)
+        - Floor of 0.5 (50% of normal thresholds) reached after 10 hours
+        - This ensures bot finds opportunities even in slow markets
+        """
         hours_since_trade = (datetime.now() - self.last_trade_time).total_seconds() / 3600
         
         if hours_since_trade >= self.emergency_hours:
@@ -189,7 +197,7 @@ class AdaptiveThresholds:
                 self.emergency_mode = True
                 print(f"🚨 Emergency Mode: ACTIVATED (no trades for {hours_since_trade:.1f}h)")
             
-            # Progressive loosening: 5% per hour after threshold
+            # Progressive loosening: 5% per hour after threshold, floor at 50%
             hours_over = hours_since_trade - self.emergency_hours
             self.emergency_multiplier = max(0.5, 1.0 - (0.05 * hours_over))
             

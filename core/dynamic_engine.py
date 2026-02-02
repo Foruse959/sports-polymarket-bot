@@ -153,9 +153,10 @@ class DynamicStrategyEngine:
         if events is None:
             events = []
         
-        # Cascade loop
+        # Cascade loop - try multiple times with progressively looser thresholds
         while retry_count <= self.max_retries:
-            print(f"\n🔄 Cascade Scan (retry {retry_count}/{self.max_retries}, threshold multiplier: {current_threshold_multiplier:.2f})")
+            attempt_num = retry_count + 1
+            print(f"\n🔄 Cascade Scan (attempt {attempt_num}/{self.max_retries + 1}, threshold multiplier: {current_threshold_multiplier:.2f})")
             
             # Phase 1: CRITICAL strategies (arbitrage, etc.)
             if self.arbitrage_detector:

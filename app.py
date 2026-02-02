@@ -8,6 +8,7 @@ import os
 import sys
 import threading
 import time
+import asyncio
 from datetime import datetime
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -621,7 +622,6 @@ def scanner_loop():
                 }
                 
                 # Run cascade scan (async compatible)
-                import asyncio
                 try:
                     # Create event loop if needed
                     try:

@@ -284,8 +284,9 @@ class WhaleTracker:
         
         # If discovered whale, check if performance has degraded
         if profile.source == 'discovered':
-            # Demote if win rate drops below threshold
-            if profile.win_rate < self.min_win_rate * 0.8:  # 20% buffer
+            # Demote if win rate drops below 80% of promotion threshold (e.g., 52% if min_win_rate is 65%)
+            demote_threshold = self.min_win_rate * 0.8
+            if profile.win_rate < demote_threshold:
                 profile.is_whale = False
                 print(f"⚠️ Whale demoted: {wallet_address[:10]}... (win rate dropped to {profile.win_rate*100:.1f}%)")
                 return False
