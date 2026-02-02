@@ -289,6 +289,32 @@ DASHBOARD_HTML = '''
                 Loading risk status...
             </div>
         </div>
+        
+        <div class="section">
+            <h2>🤖 Dynamic Autonomous Systems</h2>
+            <div id="dynamic-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px">
+                <div style="background:rgba(255,255,255,0.03);padding:15px;border-radius:8px">
+                    <div style="font-size:1.5em;margin-bottom:5px">🔄</div>
+                    <div style="font-size:1.2em;font-weight:bold" id="cascade-signals">-</div>
+                    <div style="color:#888;font-size:0.85em">Cascade Signals</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);padding:15px;border-radius:8px">
+                    <div style="font-size:1.5em;margin-bottom:5px">🎯</div>
+                    <div style="font-size:1.2em;font-weight:bold" id="arb-opportunities">-</div>
+                    <div style="color:#888;font-size:0.85em">Arb Opportunities</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);padding:15px;border-radius:8px">
+                    <div style="font-size:1.5em;margin-bottom:5px">🐋</div>
+                    <div style="font-size:1.2em;font-weight:bold" id="whale-count">-</div>
+                    <div style="color:#888;font-size:0.85em">Active Whales</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);padding:15px;border-radius:8px">
+                    <div style="font-size:1.5em;margin-bottom:5px">📊</div>
+                    <div style="font-size:1.2em;font-weight:bold" id="adaptive-mode">-</div>
+                    <div style="color:#888;font-size:0.85em">Adaptive Mode</div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script>
@@ -375,8 +401,42 @@ DASHBOARD_HTML = '''
                 riskDiv.innerHTML = riskHtml;
                 riskDiv.className = 'risk-status ' + (risk.kill_switch_active ? 'risk-danger' : risk.loss_streak > 2 ? 'risk-warning' : 'risk-ok');
                 
+                // Fetch and update dynamic stats
+                fetchDynamicStats();
+                
             } catch (e) {
                 console.error('Error fetching data:', e);
+            }
+        }
+        
+        async function fetchDynamicStats() {
+            try {
+                const res = await fetch('/api/dynamic_stats');
+                const data = await res.json();
+                
+                // Update cascade stats
+                if (data.cascade) {
+                    document.getElementById('cascade-signals').textContent = data.cascade.signals_found || 0;
+                }
+                
+                // Update arbitrage stats
+                if (data.arbitrage) {
+                    document.getElementById('arb-opportunities').textContent = data.arbitrage.opportunities_found_today || 0;
+                }
+                
+                // Update whale tracker stats
+                if (data.whale_tracker) {
+                    document.getElementById('whale-count').textContent = data.whale_tracker.active_whales || 0;
+                }
+                
+                // Update adaptive mode
+                if (data.adaptive) {
+                    const mode = data.adaptive.emergency_mode ? '🚨 Emergency' : '✅ Normal';
+                    document.getElementById('adaptive-mode').textContent = mode;
+                }
+                
+            } catch (e) {
+                console.error('Error fetching dynamic stats:', e);
             }
         }
         
