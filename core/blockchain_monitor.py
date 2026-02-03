@@ -25,6 +25,8 @@ from config_aggressive import AggressiveConfig
 
 try:
     from web3 import Web3
+    # web3.py v7+ uses ExtraDataToPOAMiddleware for PoA chains
+    from web3.middleware import ExtraDataToPOAMiddleware
     WEB3_AVAILABLE = True
 except ImportError:
     WEB3_AVAILABLE = False
@@ -51,6 +53,10 @@ class BlockchainWhaleMonitor:
         
         # Connect to Polygon
         self.w3 = Web3(Web3.HTTPProvider(Config.POLYGON_RPC_URL))
+        
+        # CRITICAL: Add POA middleware for Polygon chain
+        # Polygon uses PoA/PoS with 586-byte extraData field (vs standard 32 bytes)
+        self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         
         # CLOB contract address
         self.clob_contract_address = AggressiveConfig.POLYMARKET_CLOB_CONTRACT
