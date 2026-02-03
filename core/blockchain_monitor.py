@@ -61,6 +61,10 @@ class BlockchainWhaleMonitor:
         # CLOB contract address
         self.clob_contract_address = AggressiveConfig.POLYMARKET_CLOB_CONTRACT
         
+        # Rate limiting
+        self.last_request_time = 0
+        self.min_request_interval = 10  # 10 seconds between requests
+        
         # State
         self.last_block_checked = None
         self.running = False
@@ -123,6 +127,15 @@ class BlockchainWhaleMonitor:
             self.monitor_thread.join(timeout=5)
         print("✅ Blockchain monitor stopped")
     
+    def _wait_for_rate_limit(self):
+        """Wait if needed to respect rate limits."""
+        elapsed = time.time() - self.last_request_time
+        if elapsed < self.min_request_interval:
+            wait_time = self.min_request_interval - elapsed
+            print(f"⏳ Rate limit: waiting {wait_time:.1f}s...")
+            time.sleep(wait_time)
+        self.last_request_time = time.time()
+    
     def _monitor_loop(self):
         """Main monitoring loop (runs in background thread)."""
         print("🔍 Monitoring blockchain for whale trades...")
@@ -137,6 +150,9 @@ class BlockchainWhaleMonitor:
     
     def _scan_recent_blocks(self):
         """Scan recent blocks for whale trades."""
+        # Wait for rate limit before making API call
+        self._wait_for_rate_limit()
+        
         try:
             current_block = self.w3.eth.block_number
             
