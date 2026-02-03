@@ -357,7 +357,7 @@ class MultiSourceOddsAggregator:
         
         # Generate realistic-looking odds with slight variations
         # Using modulo to ensure deterministic mock data for testing
-        base_prob = 0.50 + (hash(sport) % 20 - 10) / 100  # 0.40 to 0.60
+        base_prob = 0.50 + ((hash(sport) % 20) - 10) / 100  # 0.40 to 0.60
         
         mock_odds = {
             'draftkings': base_prob + 0.02,

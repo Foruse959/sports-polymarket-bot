@@ -194,18 +194,6 @@ class Config:
     BLOCKCHAIN_POLL_SECONDS = int(os.getenv('BLOCKCHAIN_POLL_SECONDS', '10'))
     
     # ═══════════════════════════════════════════════════════════════════
-    # MULTI-SIGNAL ENGINE (NEW!)
-    # ═══════════════════════════════════════════════════════════════════
-    MAX_SIGNALS_PER_SCAN = int(os.getenv('MAX_SIGNALS_PER_SCAN', '5'))
-    MIN_SIGNAL_CONFIDENCE = float(os.getenv('MIN_SIGNAL_CONFIDENCE', '0.6'))
-    
-    # ═══════════════════════════════════════════════════════════════════
-    # FAVORITE FLIP STRATEGY (NEW!)
-    # ═══════════════════════════════════════════════════════════════════
-    FAVORITE_FLIP_ENABLED = os.getenv('FAVORITE_FLIP_ENABLED', 'true').lower() == 'true'
-    FAVORITE_FLIP_MIN_DROP_PERCENT = float(os.getenv('FAVORITE_FLIP_MIN_DROP_PERCENT', '5'))
-    
-    # ═══════════════════════════════════════════════════════════════════
     # ODDS AGGREGATOR (NEW!)
     # ═══════════════════════════════════════════════════════════════════
     ODDS_AGGREGATOR_ENABLED = os.getenv('ODDS_AGGREGATOR_ENABLED', 'false').lower() == 'true'

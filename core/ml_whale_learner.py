@@ -273,7 +273,8 @@ class WhaleBehaviorModel:
     
     def _train_outcome_model(self, X: np.ndarray, y: np.ndarray) -> Dict:
         """Train the outcome model (will it win?)."""
-        # Scale features
+        # Note: Scaler was already fitted in _train_entry_model which is always called first
+        # So we can safely use transform here
         X_scaled = self.scaler.transform(X)
         
         # Split data

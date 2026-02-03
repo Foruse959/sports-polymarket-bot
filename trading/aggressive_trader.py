@@ -11,7 +11,7 @@ Transforms trading from conservative to aggressive for exponential growth:
 
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import sys
 import os
 
@@ -145,7 +145,7 @@ class AggressiveTrader:
         
         return trade
     
-    def _can_trade_aggressive(self, signal: Dict) -> tuple[bool, str]:
+    def _can_trade_aggressive(self, signal: Dict) -> Tuple[bool, str]:
         """Check if can trade with aggressive limits."""
         # Max open positions
         if len(self.positions) >= AggressiveConfig.MAX_OPEN_POSITIONS:
@@ -195,7 +195,7 @@ class AggressiveTrader:
         
         return size
     
-    def _calculate_aggressive_targets(self, entry_price: float, direction: str) -> tuple[float, float]:
+    def _calculate_aggressive_targets(self, entry_price: float, direction: str) -> Tuple[float, float]:
         """Calculate aggressive targets with wider stops."""
         if direction == 'BUY':
             target = entry_price * (1 + AggressiveConfig.TAKE_PROFIT_PERCENT / 100)

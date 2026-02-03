@@ -38,7 +38,7 @@ from trading.aggressive_trader import AggressiveTrader
 from trading.whale_copy_executor import WhaleCopyExecutor
 from core.strategies.favorite_flip import FavoriteFlipStrategy
 from core.multi_signal_engine import MultiSignalEngine
-from data.odds_aggregator import OddsAggregator
+from data.odds_aggregator import MultiSourceOddsAggregator
 from data.websocket_feed import WebSocketFeed
 
 
@@ -89,11 +89,7 @@ try:
     
     if Config.AGGRESSIVE_MODE:
         # Multi-Signal Engine (execute multiple trades per scan)
-        multi_signal_engine = MultiSignalEngine(
-            strategies=strategy_engine.strategies,
-            max_signals=Config.MAX_SIGNALS_PER_SCAN,
-            min_confidence=Config.MIN_SIGNAL_CONFIDENCE
-        )
+        multi_signal_engine = MultiSignalEngine(config=Config)
         print(f"✅ Multi-Signal Engine: Enabled (max {Config.MAX_SIGNALS_PER_SCAN} signals/scan)")
         
         # Whale Copy Executor
@@ -104,7 +100,7 @@ try:
         
         # Odds Aggregator
         if Config.ODDS_AGGREGATOR_ENABLED:
-            odds_aggregator = OddsAggregator()
+            odds_aggregator = MultiSourceOddsAggregator()
             print("✅ Odds Aggregator: Enabled")
         
         # WebSocket Feed
@@ -762,21 +758,17 @@ def scanner_loop():
             # Use Multi-Signal Engine if available (executes multiple signals per scan)
             if multi_signal_engine and Config.AGGRESSIVE_MODE:
                 print(f"\n🎯 Multi-Signal Engine: Processing {len(all_signals)} signals...")
-                executed_signals = multi_signal_engine.execute_signals(
-                    all_signals,
-                    paper_trader,
-                    current_prices
-                )
+                selected_signals = multi_signal_engine.select_signals(all_signals, current_prices)
                 
-                # Send alerts for executed trades
-                for signal in executed_signals:
+                # Execute selected signals
+                for signal in selected_signals:
                     alerts.alert_signal(signal)
                     
                     trade = paper_trader.execute_trade(signal)
                     if trade:
                         alerts.alert_trade_opened(trade)
                 
-                print(f"   Executed {len(executed_signals)} signals")
+                print(f"   Executed {len(selected_signals)} signals")
             else:
                 # Conservative mode: Execute top 3 signals only
                 for signal in all_signals[:3]:
