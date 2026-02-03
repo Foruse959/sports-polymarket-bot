@@ -82,6 +82,9 @@ class FavoriteFlipStrategy:
     Detects when favorite drops significantly and buys underdog.
     """
     
+    # Class constant for default outcome ID when tracking simplified price history
+    DEFAULT_OUTCOME_ID = 'primary'
+    
     def __init__(self):
         self.name = "favorite_flip"
         self.price_histories = {}  # market_id -> {outcome_id -> PriceHistory}
@@ -97,7 +100,7 @@ class FavoriteFlipStrategy:
         print(f"   Min drop: {self.min_drop_percent}%")
         print(f"   Lookback: {self.lookback_minutes} min")
     
-        def update_prices(self, markets: List[Dict]):
+    def update_prices(self, markets: List[Dict]):
         """Update price history for all markets."""
         for market in markets:
             try:
@@ -147,6 +150,21 @@ class FavoriteFlipStrategy:
             except Exception as e:
                 # Skip this market on error, don't crash
                 continue
+    
+    def _record_price(self, market_id: str, price: float):
+        """Record a price observation for a market."""
+        if market_id not in self.price_histories:
+            self.price_histories[market_id] = {}
+            self.markets_tracked += 1
+        
+        # For now, record as single outcome (simplified)
+        # In full implementation, would track each outcome separately
+        outcome_id = self.DEFAULT_OUTCOME_ID
+        
+        if outcome_id not in self.price_histories[market_id]:
+            self.price_histories[market_id][outcome_id] = PriceHistory(market_id)
+        
+        self.price_histories[market_id][outcome_id].add_price(price)
     
     def scan_for_signals(self, markets: List[Dict]) -> List[Dict]:
         """
