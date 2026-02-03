@@ -171,6 +171,46 @@ class Config:
     PRIORITY_SPORTS = [s.strip() for s in os.getenv('PRIORITY_SPORTS', 'cricket,football,nba,nfl,tennis,ufc').split(',')]
     FETCH_FUTURES_MARKETS = os.getenv('FETCH_FUTURES_MARKETS', 'true').lower() == 'true'  # Season-long bets
     
+    # ═══════════════════════════════════════════════════════════════════
+    # AGGRESSIVE MODE (NEW!)
+    # ═══════════════════════════════════════════════════════════════════
+    AGGRESSIVE_MODE = os.getenv('AGGRESSIVE_MODE', 'false').lower() == 'true'
+    POSITION_SIZE_PERCENT = float(os.getenv('POSITION_SIZE_PERCENT', '10'))
+    USE_KELLY_SIZING = os.getenv('USE_KELLY_SIZING', 'true').lower() == 'true'
+    KELLY_FRACTION = float(os.getenv('KELLY_FRACTION', '0.25'))
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # ML WHALE COPY (NEW!)
+    # ═══════════════════════════════════════════════════════════════════
+    ML_ENABLED = os.getenv('ML_ENABLED', 'true').lower() == 'true'
+    ML_MODEL_PATH = os.getenv('ML_MODEL_PATH', 'models/whale_model.pkl')
+    ML_MIN_CONFIDENCE = float(os.getenv('ML_MIN_CONFIDENCE', '0.6'))
+    ML_AUTO_RETRAIN_SAMPLES = int(os.getenv('ML_AUTO_RETRAIN_SAMPLES', '50'))
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # BLOCKCHAIN MONITORING (NEW!)
+    # ═══════════════════════════════════════════════════════════════════
+    BLOCKCHAIN_MONITOR_ENABLED = os.getenv('BLOCKCHAIN_MONITOR_ENABLED', 'false').lower() == 'true'
+    BLOCKCHAIN_POLL_SECONDS = int(os.getenv('BLOCKCHAIN_POLL_SECONDS', '10'))
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # MULTI-SIGNAL ENGINE (NEW!)
+    # ═══════════════════════════════════════════════════════════════════
+    MAX_SIGNALS_PER_SCAN = int(os.getenv('MAX_SIGNALS_PER_SCAN', '5'))
+    MIN_SIGNAL_CONFIDENCE = float(os.getenv('MIN_SIGNAL_CONFIDENCE', '0.6'))
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # FAVORITE FLIP STRATEGY (NEW!)
+    # ═══════════════════════════════════════════════════════════════════
+    FAVORITE_FLIP_ENABLED = os.getenv('FAVORITE_FLIP_ENABLED', 'true').lower() == 'true'
+    FAVORITE_FLIP_MIN_DROP_PERCENT = float(os.getenv('FAVORITE_FLIP_MIN_DROP_PERCENT', '5'))
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # ODDS AGGREGATOR (NEW!)
+    # ═══════════════════════════════════════════════════════════════════
+    ODDS_AGGREGATOR_ENABLED = os.getenv('ODDS_AGGREGATOR_ENABLED', 'false').lower() == 'true'
+    ODDS_MIN_EDGE_PERCENT = float(os.getenv('ODDS_MIN_EDGE_PERCENT', '2'))
+    
     @classmethod
     def is_paper_mode(cls) -> bool:
         """Check if running in paper trading mode."""
