@@ -17,6 +17,7 @@ from flask_cors import CORS
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config import Config
+from config_aggressive import AggressiveConfig
 from data.database import Database
 from data.polymarket_client import PolymarketClient
 from core.live_sports_feed import LiveSportsFeed
@@ -32,6 +33,14 @@ from core.adaptive_thresholds import AdaptiveThresholds
 from data.multi_source import DataAggregator
 from trading.smart_executor import SmartExecutor
 
+# NEW: Import aggressive trading components
+from trading.aggressive_trader import AggressiveTrader
+from trading.whale_copy_executor import WhaleCopyExecutor
+from core.strategies.favorite_flip import FavoriteFlipStrategy
+from core.multi_signal_engine import MultiSignalEngine
+from data.odds_aggregator import OddsAggregator
+from data.websocket_feed import WebSocketFeed
+
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -42,7 +51,16 @@ db = Database()
 polymarket = PolymarketClient()
 sports_feed = LiveSportsFeed()
 strategy_engine = SportsStrategyEngine()
-paper_trader = PaperTrader()
+
+# Initialize trader based on mode
+if Config.AGGRESSIVE_MODE:
+    print("\n⚡ AGGRESSIVE MODE ENABLED")
+    paper_trader = AggressiveTrader()
+    AggressiveConfig.print_status()
+else:
+    print("\n💼 CONSERVATIVE MODE")
+    paper_trader = PaperTrader()
+
 alerts = TelegramAlerts()
 
 # NEW: Initialize dynamic components with graceful degradation
@@ -55,6 +73,44 @@ try:
     adaptive_thresholds = AdaptiveThresholds() if Config.ADAPTIVE_ENABLED else None
     data_aggregator = DataAggregator()
     smart_executor = SmartExecutor(polymarket_client=polymarket)
+    
+    # NEW: Initialize aggressive components
+    favorite_flip_strategy = None
+    multi_signal_engine = None
+    whale_copy_executor = None
+    odds_aggregator = None
+    websocket_feed = None
+    
+    if Config.AGGRESSIVE_MODE or Config.FAVORITE_FLIP_ENABLED:
+        # Favorite Flip Strategy
+        favorite_flip_strategy = FavoriteFlipStrategy()
+        strategy_engine.strategies.append(favorite_flip_strategy)
+        print("✅ Favorite Flip Strategy: Enabled")
+    
+    if Config.AGGRESSIVE_MODE:
+        # Multi-Signal Engine (execute multiple trades per scan)
+        multi_signal_engine = MultiSignalEngine(
+            strategies=strategy_engine.strategies,
+            max_signals=Config.MAX_SIGNALS_PER_SCAN,
+            min_confidence=Config.MIN_SIGNAL_CONFIDENCE
+        )
+        print(f"✅ Multi-Signal Engine: Enabled (max {Config.MAX_SIGNALS_PER_SCAN} signals/scan)")
+        
+        # Whale Copy Executor
+        if Config.ML_ENABLED:
+            whale_copy_executor = WhaleCopyExecutor(trader=paper_trader)
+            whale_copy_executor.start_monitoring()
+            print("✅ Whale Copy Executor: Enabled")
+        
+        # Odds Aggregator
+        if Config.ODDS_AGGREGATOR_ENABLED:
+            odds_aggregator = OddsAggregator()
+            print("✅ Odds Aggregator: Enabled")
+        
+        # WebSocket Feed
+        websocket_feed = WebSocketFeed()
+        websocket_feed.start()
+        print("✅ WebSocket Feed: Enabled")
     
     # Initialize dynamic engine (wraps existing strategies)
     if Config.CASCADE_ENABLED:
@@ -74,12 +130,19 @@ try:
 except Exception as e:
     print(f"⚠️ Dynamic engine initialization failed: {e}")
     print("⚠️ Falling back to basic engine")
+    import traceback
+    traceback.print_exc()
     dynamic_engine = None
     arbitrage_detector = None
     whale_tracker = None
     adaptive_thresholds = None
     data_aggregator = None
     smart_executor = None
+    favorite_flip_strategy = None
+    multi_signal_engine = None
+    whale_copy_executor = None
+    odds_aggregator = None
+    websocket_feed = None
 
 # State
 bot_running = False
@@ -595,6 +658,10 @@ def scanner_loop():
                 current_prices[market_id] = price
                 market['current_price'] = price
             
+            # Update favorite flip strategy with current prices
+            if favorite_flip_strategy:
+                favorite_flip_strategy.update_prices(markets)
+            
             # 6. Update positions and check exits
             closed_trades = paper_trader.update_positions(current_prices)
             
@@ -691,16 +758,37 @@ def scanner_loop():
             
             signals_found += len(all_signals)
             
-            # 8. Execute top signals
-            for signal in all_signals[:3]:  # Max 3 trades per scan
-                # Send signal alert
-                alerts.alert_signal(signal)
+            # 8. Execute signals
+            # Use Multi-Signal Engine if available (executes multiple signals per scan)
+            if multi_signal_engine and Config.AGGRESSIVE_MODE:
+                print(f"\n🎯 Multi-Signal Engine: Processing {len(all_signals)} signals...")
+                executed_signals = multi_signal_engine.execute_signals(
+                    all_signals,
+                    paper_trader,
+                    current_prices
+                )
                 
-                # Execute paper trade
-                trade = paper_trader.execute_trade(signal)
+                # Send alerts for executed trades
+                for signal in executed_signals:
+                    alerts.alert_signal(signal)
+                    
+                    trade = paper_trader.execute_trade(signal)
+                    if trade:
+                        alerts.alert_trade_opened(trade)
                 
-                if trade:
-                    alerts.alert_trade_opened(trade)
+                print(f"   Executed {len(executed_signals)} signals")
+            else:
+                # Conservative mode: Execute top 3 signals only
+                for signal in all_signals[:3]:
+                    alerts.alert_signal(signal)
+                    
+                    trade = paper_trader.execute_trade(signal)
+                    if trade:
+                        alerts.alert_trade_opened(trade)
+            
+            # Update whale copy executor with closed trades (for ML learning)
+            if whale_copy_executor and closed_trades:
+                whale_copy_executor.update_outcomes(closed_trades)
             
             # 9. Update scan stats
             last_scan_time = datetime.now()
