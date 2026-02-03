@@ -77,6 +77,7 @@ class AggressiveConfig:
     # ═══════════════════════════════════════════════════════════════════
     BLOCKCHAIN_MONITOR_ENABLED = os.getenv('BLOCKCHAIN_MONITOR_ENABLED', 'true').lower() == 'true'
     BLOCKCHAIN_POLL_SECONDS = int(os.getenv('BLOCKCHAIN_POLL_SECONDS', '10'))
+    BLOCKCHAIN_RATE_LIMIT_SECONDS = int(os.getenv('BLOCKCHAIN_RATE_LIMIT_SECONDS', '10'))  # Min interval between API calls
     POLYMARKET_CLOB_CONTRACT = os.getenv('POLYMARKET_CLOB_CONTRACT', '0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E')
     
     # ═══════════════════════════════════════════════════════════════════

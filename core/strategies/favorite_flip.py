@@ -82,6 +82,9 @@ class FavoriteFlipStrategy:
     Detects when favorite drops significantly and buys underdog.
     """
     
+    # Class constant for default outcome ID when tracking simplified price history
+    DEFAULT_OUTCOME_ID = 'primary'
+    
     def __init__(self):
         self.name = "favorite_flip"
         self.price_histories = {}  # market_id -> {outcome_id -> PriceHistory}
@@ -156,7 +159,7 @@ class FavoriteFlipStrategy:
         
         # For now, record as single outcome (simplified)
         # In full implementation, would track each outcome separately
-        outcome_id = 'primary'
+        outcome_id = self.DEFAULT_OUTCOME_ID
         
         if outcome_id not in self.price_histories[market_id]:
             self.price_histories[market_id][outcome_id] = PriceHistory(market_id)

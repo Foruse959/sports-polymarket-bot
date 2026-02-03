@@ -63,7 +63,7 @@ class BlockchainWhaleMonitor:
         
         # Rate limiting
         self.last_request_time = 0
-        self.min_request_interval = 10  # 10 seconds between requests
+        self.min_request_interval = AggressiveConfig.BLOCKCHAIN_RATE_LIMIT_SECONDS
         
         # State
         self.last_block_checked = None
