@@ -136,6 +136,14 @@ class Config:
     WEBSOCKET_FALLBACK_POLL_SECONDS = int(os.getenv('WEBSOCKET_FALLBACK_POLL_SECONDS', '5'))
     
     # ═══════════════════════════════════════════════════════════════════
+    # MULTI-SIGNAL ENGINE
+    # ═══════════════════════════════════════════════════════════════════
+    MIN_SIGNAL_CONFIDENCE = float(os.getenv('MIN_SIGNAL_CONFIDENCE', '0.6'))
+    MAX_SIGNALS_PER_SCAN = int(os.getenv('MAX_SIGNALS_PER_SCAN', '5'))
+    MAX_CORRELATED_EXPOSURE_USD = float(os.getenv('MAX_CORRELATED_EXPOSURE_USD', '100'))
+    DIVERSIFICATION_BONUS = float(os.getenv('DIVERSIFICATION_BONUS', '0.1'))
+    
+    # ═══════════════════════════════════════════════════════════════════
     # FREE SPORTS DATA SOURCES
     # ═══════════════════════════════════════════════════════════════════
     # These are FREE and don't need API keys
