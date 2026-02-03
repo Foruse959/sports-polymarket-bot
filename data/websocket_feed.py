@@ -201,7 +201,7 @@ class WebSocketPriceFeed:
             
         except Exception as e:
             self.stats['websocket_errors'] += 1
-            print(f"❌ WebSocket connection failed: {e}")
+            print(f"❌ WebSocket connection failed to {self.ws_url}: {e}")
             await self._handle_connection_failure()
     
     async def _subscribe_markets(self):
@@ -382,7 +382,7 @@ class WebSocketPriceFeed:
         for market_id in self.subscribed_markets:
             try:
                 # This would call polymarket_client.get_market(market_id)
-                # For now, use mock data
+                # For now, use mock data with deterministic pricing
                 mock_price = 0.5 + (hash(market_id) % 50) / 100
                 
                 update = PriceUpdate(

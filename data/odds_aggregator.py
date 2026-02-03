@@ -356,6 +356,7 @@ class MultiSourceOddsAggregator:
         self.stats['mock_mode_uses'] += 1
         
         # Generate realistic-looking odds with slight variations
+        # Using modulo to ensure deterministic mock data for testing
         base_prob = 0.50 + (hash(sport) % 20 - 10) / 100  # 0.40 to 0.60
         
         mock_odds = {
