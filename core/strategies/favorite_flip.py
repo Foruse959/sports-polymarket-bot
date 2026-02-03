@@ -97,35 +97,56 @@ class FavoriteFlipStrategy:
         print(f"   Min drop: {self.min_drop_percent}%")
         print(f"   Lookback: {self.lookback_minutes} min")
     
-    def update_prices(self, markets: List[Dict]):
-        """
-        Update price histories for markets.
-        
-        Args:
-            markets: List of market dicts with current prices
-        """
+        def update_prices(self, markets: List[Dict]):
+        """Update price history for all markets."""
         for market in markets:
-            market_id = market.get('id') or market.get('market_id')
-            
-            if not market_id:
+            try:
+                market_id = market.get('id', market.get('condition_id', ''))
+                
+                # Get current price - handle different market structures
+                price = None
+                
+                # Try direct price field first
+                if 'current_price' in market:
+                    price = market['current_price']
+                elif 'price' in market:
+                    price = market['price']
+                
+                # Try outcomes array
+                elif 'outcomes' in market:
+                    outcomes = market.get('outcomes', [])
+                    for outcome in outcomes:
+                        # FIX: Handle both dict and string outcomes
+                        if isinstance(outcome, dict):
+                            outcome_price = outcome.get('price', 0)
+                            if outcome_price:
+                                price = outcome_price
+                                break
+                        elif isinstance(outcome, str):
+                            # Outcome is just a string name - skip
+                            continue
+                
+                # Try tokens array
+                elif 'tokens' in market:
+                    tokens = market.get('tokens', [])
+                    if tokens and isinstance(tokens[0], dict):
+                        price = tokens[0].get('price', 0)
+                
+                # Fallback to outcomePrices
+                if price is None and 'outcomePrices' in market:
+                    prices = market.get('outcomePrices', [])
+                    if prices:
+                        try:
+                            price = float(prices[0]) if prices[0] else 0
+                        except:
+                            price = 0
+                
+                if price and market_id:
+                    self._record_price(market_id, float(price))
+                    
+            except Exception as e:
+                # Skip this market on error, don't crash
                 continue
-            
-            # Initialize history if needed
-            if market_id not in self.price_histories:
-                self.price_histories[market_id] = {}
-                self.markets_tracked += 1
-            
-            # Update each outcome's price history
-            outcomes = market.get('outcomes', [])
-            
-            for outcome in outcomes:
-                outcome_id = outcome.get('id') or outcome.get('token_id', 'unknown')
-                price = outcome.get('price', outcome.get('last_price', 0.5))
-                
-                if outcome_id not in self.price_histories[market_id]:
-                    self.price_histories[market_id][outcome_id] = PriceHistory(f"{market_id}:{outcome_id}")
-                
-                self.price_histories[market_id][outcome_id].add_price(price)
     
     def scan_for_signals(self, markets: List[Dict]) -> List[Dict]:
         """
