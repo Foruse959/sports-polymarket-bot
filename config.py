@@ -136,6 +136,14 @@ class Config:
     WEBSOCKET_FALLBACK_POLL_SECONDS = int(os.getenv('WEBSOCKET_FALLBACK_POLL_SECONDS', '5'))
     
     # ═══════════════════════════════════════════════════════════════════
+    # MULTI-SIGNAL ENGINE
+    # ═══════════════════════════════════════════════════════════════════
+    MIN_SIGNAL_CONFIDENCE = float(os.getenv('MIN_SIGNAL_CONFIDENCE', '0.6'))
+    MAX_SIGNALS_PER_SCAN = int(os.getenv('MAX_SIGNALS_PER_SCAN', '5'))
+    MAX_CORRELATED_EXPOSURE_USD = float(os.getenv('MAX_CORRELATED_EXPOSURE_USD', '100'))
+    DIVERSIFICATION_BONUS = float(os.getenv('DIVERSIFICATION_BONUS', '0.1'))
+    
+    # ═══════════════════════════════════════════════════════════════════
     # FREE SPORTS DATA SOURCES
     # ═══════════════════════════════════════════════════════════════════
     # These are FREE and don't need API keys
@@ -162,6 +170,34 @@ class Config:
     UPCOMING_HOURS_AHEAD = int(os.getenv('UPCOMING_HOURS_AHEAD', '24'))
     PRIORITY_SPORTS = [s.strip() for s in os.getenv('PRIORITY_SPORTS', 'cricket,football,nba,nfl,tennis,ufc').split(',')]
     FETCH_FUTURES_MARKETS = os.getenv('FETCH_FUTURES_MARKETS', 'true').lower() == 'true'  # Season-long bets
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # AGGRESSIVE MODE (NEW!)
+    # ═══════════════════════════════════════════════════════════════════
+    AGGRESSIVE_MODE = os.getenv('AGGRESSIVE_MODE', 'false').lower() == 'true'
+    POSITION_SIZE_PERCENT = float(os.getenv('POSITION_SIZE_PERCENT', '10'))
+    USE_KELLY_SIZING = os.getenv('USE_KELLY_SIZING', 'true').lower() == 'true'
+    KELLY_FRACTION = float(os.getenv('KELLY_FRACTION', '0.25'))
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # ML WHALE COPY (NEW!)
+    # ═══════════════════════════════════════════════════════════════════
+    ML_ENABLED = os.getenv('ML_ENABLED', 'true').lower() == 'true'
+    ML_MODEL_PATH = os.getenv('ML_MODEL_PATH', 'models/whale_model.pkl')
+    ML_MIN_CONFIDENCE = float(os.getenv('ML_MIN_CONFIDENCE', '0.6'))
+    ML_AUTO_RETRAIN_SAMPLES = int(os.getenv('ML_AUTO_RETRAIN_SAMPLES', '50'))
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # BLOCKCHAIN MONITORING (NEW!)
+    # ═══════════════════════════════════════════════════════════════════
+    BLOCKCHAIN_MONITOR_ENABLED = os.getenv('BLOCKCHAIN_MONITOR_ENABLED', 'false').lower() == 'true'
+    BLOCKCHAIN_POLL_SECONDS = int(os.getenv('BLOCKCHAIN_POLL_SECONDS', '10'))
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # ODDS AGGREGATOR (NEW!)
+    # ═══════════════════════════════════════════════════════════════════
+    ODDS_AGGREGATOR_ENABLED = os.getenv('ODDS_AGGREGATOR_ENABLED', 'false').lower() == 'true'
+    ODDS_MIN_EDGE_PERCENT = float(os.getenv('ODDS_MIN_EDGE_PERCENT', '2'))
     
     @classmethod
     def is_paper_mode(cls) -> bool:
