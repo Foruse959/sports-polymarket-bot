@@ -175,6 +175,7 @@ class Config:
     # AGGRESSIVE MODE (NEW!)
     # ═══════════════════════════════════════════════════════════════════
     AGGRESSIVE_MODE = os.getenv('AGGRESSIVE_MODE', 'false').lower() == 'true'
+    FAVORITE_FLIP_ENABLED = os.getenv('FAVORITE_FLIP_ENABLED', 'false').lower() == 'true'
     POSITION_SIZE_PERCENT = float(os.getenv('POSITION_SIZE_PERCENT', '10'))
     USE_KELLY_SIZING = os.getenv('USE_KELLY_SIZING', 'true').lower() == 'true'
     KELLY_FRACTION = float(os.getenv('KELLY_FRACTION', '0.25'))
