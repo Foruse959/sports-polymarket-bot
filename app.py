@@ -39,7 +39,7 @@ from trading.whale_copy_executor import WhaleCopyExecutor
 from core.strategies.favorite_flip import FavoriteFlipStrategy
 from core.multi_signal_engine import MultiSignalEngine
 from data.odds_aggregator import MultiSourceOddsAggregator
-from data.websocket_feed import WebSocketFeed
+from data.websocket_feed import WebSocketPriceFeed
 
 
 # Initialize Flask app
@@ -104,9 +104,10 @@ try:
             print("✅ Odds Aggregator: Enabled")
         
         # WebSocket Feed
-        websocket_feed = WebSocketFeed()
-        websocket_feed.start()
-        print("✅ WebSocket Feed: Enabled")
+        websocket_feed = WebSocketPriceFeed(polymarket_client=polymarket)
+        # Note: start() is async, we'll initialize but not start here
+        # The WebSocket feed will use polling fallback in sync context
+        print("✅ WebSocket Price Feed: Initialized (polling mode)")
     
     # Initialize dynamic engine (wraps existing strategies)
     if Config.CASCADE_ENABLED:
