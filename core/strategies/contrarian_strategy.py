@@ -118,6 +118,25 @@ class ContrarianStrategy(BaseStrategy):
             }
         )
     
+    def should_exit(self, position: Dict, current_price: float,
+                    sports_data: Dict = None) -> tuple:
+        """Check if position should be exited."""
+        entry_price = position.get('entry_price', current_price)
+        signal_type = position.get('signal_type', 'BUY_YES')
+        
+        if signal_type == 'BUY_YES':
+            pnl_percent = (current_price - entry_price) / entry_price * 100
+        else:
+            pnl_percent = (entry_price - current_price) / entry_price * 100
+        
+        # Contrarian: take quick profits, tight stops
+        if pnl_percent >= 10:
+            return (True, "Contrarian take profit")
+        if pnl_percent <= -7:
+            return (True, "Contrarian stop loss")
+        
+        return (False, "")
+    
     def get_stats(self) -> Dict:
         return {
             'name': self.name,

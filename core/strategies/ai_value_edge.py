@@ -120,6 +120,33 @@ class AIValueEdgeStrategy(BaseStrategy):
             }
         )
     
+    def should_exit(self, position: Dict, current_price: float,
+                    sports_data: Dict = None) -> tuple:
+        """
+        Check if position should be exited.
+        
+        Returns:
+            (should_exit, reason)
+        """
+        entry_price = position.get('entry_price', current_price)
+        signal_type = position.get('signal_type', 'BUY_YES')
+        
+        # Calculate P&L
+        if signal_type == 'BUY_YES':
+            pnl_percent = (current_price - entry_price) / entry_price * 100
+        else:
+            pnl_percent = (entry_price - current_price) / entry_price * 100
+        
+        # Take profit at 15%
+        if pnl_percent >= 15:
+            return (True, "AI Value Edge take profit")
+        
+        # Stop loss at 8%
+        if pnl_percent <= -8:
+            return (True, "AI Value Edge stop loss")
+        
+        return (False, "")
+    
     def get_stats(self) -> Dict:
         """Get strategy statistics."""
         return {

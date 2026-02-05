@@ -103,6 +103,31 @@ class MomentumStrategy(BaseStrategy):
             }
         )
     
+    def should_exit(self, position: Dict, current_price: float,
+                    sports_data: Dict = None) -> tuple:
+        """Check if position should be exited."""
+        entry_price = position.get('entry_price', current_price)
+        signal_type = position.get('signal_type', 'BUY_YES')
+        
+        if signal_type == 'BUY_YES':
+            pnl_percent = (current_price - entry_price) / entry_price * 100
+        else:
+            pnl_percent = (entry_price - current_price) / entry_price * 100
+        
+        # Momentum: tight stops, let winners run
+        if pnl_percent >= 12:
+            return (True, "Momentum take profit")
+        if pnl_percent <= -6:
+            return (True, "Momentum stop loss")
+        
+        # Exit if momentum reversed
+        momentum_dir = position.get('metadata', {}).get('momentum_direction')
+        current_momentum = position.get('current_momentum')
+        if momentum_dir and current_momentum and momentum_dir != current_momentum:
+            return (True, "Momentum reversed")
+        
+        return (False, "")
+    
     def get_stats(self) -> Dict:
         return {
             'name': self.name,
