@@ -41,6 +41,13 @@ from core.multi_signal_engine import MultiSignalEngine
 from data.odds_aggregator import MultiSourceOddsAggregator
 from data.websocket_feed import WebSocketPriceFeed
 
+# NEW: Import AI analysis and Always-On strategies
+from core.price_history import PriceHistory
+from core.ai_analyzer import AIAnalyzer
+from core.strategies.ai_value_edge import AIValueEdgeStrategy
+from core.strategies.momentum_strategy import MomentumStrategy
+from core.strategies.contrarian_strategy import ContrarianStrategy
+
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -122,6 +129,37 @@ try:
         dynamic_engine = None
         print("⚪ Dynamic Strategy Engine: Disabled (using basic engine)")
     
+    # NEW: Initialize Price History Tracker (enables momentum/contrarian strategies)
+    price_history = PriceHistory(max_history=20, max_age_minutes=60)
+    print("✅ Price History Tracker: Enabled")
+    
+    # NEW: Initialize AI Analyzer with fallback chain (Ollama → Groq → Heuristics)
+    ai_analyzer = None
+    ai_value_strategy = None
+    momentum_strategy = None
+    contrarian_strategy = None
+    
+    if Config.AI_ANALYSIS_ENABLED:
+        ai_analyzer = AIAnalyzer()
+        print(f"✅ AI Analyzer: Initialized (Ollama: {'✓' if ai_analyzer.ollama_available else '✗'}, Groq: {'✓' if ai_analyzer.groq_available else '✗'})")
+        
+        # AI Value Edge Strategy
+        if Config.AI_VALUE_EDGE_ENABLED:
+            ai_value_strategy = AIValueEdgeStrategy(ai_analyzer=ai_analyzer)
+            strategy_engine.strategies.append(ai_value_strategy)
+            print("✅ AI Value Edge Strategy: Enabled")
+    
+    # NEW: Initialize Always-On Strategies
+    if Config.MOMENTUM_STRATEGY_ENABLED:
+        momentum_strategy = MomentumStrategy()
+        strategy_engine.strategies.append(momentum_strategy)
+        print("✅ Momentum Strategy: Enabled")
+    
+    if Config.CONTRARIAN_STRATEGY_ENABLED:
+        contrarian_strategy = ContrarianStrategy()
+        strategy_engine.strategies.append(contrarian_strategy)
+        print("✅ Contrarian Strategy: Enabled")
+    
     print("✅ All dynamic systems initialized successfully\n")
     
 except Exception as e:
@@ -140,6 +178,13 @@ except Exception as e:
     whale_copy_executor = None
     odds_aggregator = None
     websocket_feed = None
+    # NEW: Fallback for new components
+    price_history = PriceHistory()  # Still useful for basic tracking
+    ai_analyzer = None
+    ai_value_strategy = None
+    momentum_strategy = None
+    contrarian_strategy = None
+
 
 # State
 bot_running = False
@@ -654,6 +699,14 @@ def scanner_loop():
                 price = polymarket.get_market_price(market)
                 current_prices[market_id] = price
                 market['current_price'] = price
+                
+                # NEW: Update price history for each market
+                if price_history:
+                    price_history.update(market_id, price)
+            
+            # NEW: Enrich markets with price history data (enables momentum/contrarian)
+            if price_history:
+                markets = price_history.enrich_markets(markets)
             
             # Update favorite flip strategy with current prices
             if favorite_flip_strategy:

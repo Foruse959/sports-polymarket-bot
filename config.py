@@ -200,6 +200,40 @@ class Config:
     ODDS_AGGREGATOR_ENABLED = os.getenv('ODDS_AGGREGATOR_ENABLED', 'false').lower() == 'true'
     ODDS_MIN_EDGE_PERCENT = float(os.getenv('ODDS_MIN_EDGE_PERCENT', '2'))
     
+    # ═══════════════════════════════════════════════════════════════════
+    # AI ANALYSIS (NEW!) - Uses Ollama (local) or Groq (cloud, free)
+    # ═══════════════════════════════════════════════════════════════════
+    AI_ANALYSIS_ENABLED = os.getenv('AI_ANALYSIS_ENABLED', 'true').lower() == 'true'
+    OLLAMA_URL = os.getenv('OLLAMA_URL', 'http://localhost:11434')
+    OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama3.2')
+    AI_FALLBACK_TO_GROQ = os.getenv('AI_FALLBACK_TO_GROQ', 'true').lower() == 'true'
+    AI_CACHE_TTL_SECONDS = int(os.getenv('AI_CACHE_TTL_SECONDS', '300'))
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # ALWAYS-ON STRATEGIES (NEW!) - Work without live events
+    # ═══════════════════════════════════════════════════════════════════
+    AI_VALUE_EDGE_ENABLED = os.getenv('AI_VALUE_EDGE_ENABLED', 'true').lower() == 'true'
+    MOMENTUM_STRATEGY_ENABLED = os.getenv('MOMENTUM_STRATEGY_ENABLED', 'true').lower() == 'true'
+    CONTRARIAN_STRATEGY_ENABLED = os.getenv('CONTRARIAN_STRATEGY_ENABLED', 'true').lower() == 'true'
+    
+    # AI Value Edge thresholds
+    AI_MIN_TRADE_CONFIDENCE = float(os.getenv('AI_MIN_TRADE_CONFIDENCE', '0.6'))
+    AI_MIN_EDGE_PERCENT = float(os.getenv('AI_MIN_EDGE_PERCENT', '3'))
+    
+    # Momentum thresholds
+    MOMENTUM_MIN_STRENGTH = float(os.getenv('MOMENTUM_MIN_STRENGTH', '0.5'))
+    
+    # Contrarian thresholds (RELAXED for more trades)
+    CONTRARIAN_MIN_MOVE = float(os.getenv('CONTRARIAN_MIN_MOVE', '0.04'))  # 4% move triggers
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # RELAXED THRESHOLDS (for Market Only strategy - more trades!)
+    # ═══════════════════════════════════════════════════════════════════
+    MARKET_ONLY_FAVORITE_THRESHOLD = float(os.getenv('MARKET_ONLY_FAVORITE_THRESHOLD', '0.85'))  # Was 0.92
+    MARKET_ONLY_UNDERDOG_THRESHOLD = float(os.getenv('MARKET_ONLY_UNDERDOG_THRESHOLD', '0.18'))  # Was 0.12
+    SPREAD_SCALP_MIN_PERCENT = float(os.getenv('SPREAD_SCALP_MIN_PERCENT', '2.5'))  # Was 4.0
+    
+
     @classmethod
     def is_paper_mode(cls) -> bool:
         """Check if running in paper trading mode."""
