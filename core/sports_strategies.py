@@ -867,9 +867,9 @@ class MarketOnlyStrategy(BaseStrategy):
         if current_price == 0.5:
             return None
         
-        # Strategy 1: Extreme favorites (>90%) - SELL
-        # Markets at 90%+ often have fat tail risk
-        if current_price >= 0.92:
+        # Strategy 1: Extreme favorites (>75%) - SELL
+        # Markets at 75%+ often have fat tail risk
+        if current_price >= Config.MARKET_ONLY_FAVORITE_THRESHOLD:
             return TradeSignal(
                 strategy=self.name,
                 signal_type=SignalType.SELL,
@@ -879,20 +879,20 @@ class MarketOnlyStrategy(BaseStrategy):
                 entry_price=current_price,
                 target_price=current_price * 0.97,  # 3% drop
                 stop_loss_price=min(0.99, current_price * 1.02),
-                confidence=0.55 + (current_price - 0.90) * 2,  # Higher price = higher confidence
+                confidence=0.55 + (current_price - 0.75) * 2,  # Higher price = higher confidence
                 size_usd=self.calculate_size(0.55, Config.MAX_POSITION_USD * 0.3),
-                rationale=f"Selling extreme favorite at {current_price*100:.0f}%",
+                rationale=f"Selling favorite at {current_price*100:.0f}%",
                 metadata={
                     'entry_price': current_price,
                     'strategy_type': 'extreme_favorite_fade'
                 }
             )
         
-        # Strategy 2: Deep underdogs (<12%) - BUY for asymmetric risk
-        # Very low probability events are often underpriced
-        if current_price <= 0.12 and current_price > 0.03:
+        # Strategy 2: Underdogs (<25%) - BUY for asymmetric risk
+        # Low probability events are often underpriced
+        if current_price <= Config.MARKET_ONLY_UNDERDOG_THRESHOLD and current_price > 0.03:
             # Only if it's a "win" market (not weird derivatives)
-            if 'win' in question or 'beat' in question or 'defeat' in question:
+            if 'win' in question or 'beat' in question or 'defeat' in question or market.get('sport'):
                 return TradeSignal(
                     strategy=self.name,
                     signal_type=SignalType.BUY,
@@ -900,11 +900,11 @@ class MarketOnlyStrategy(BaseStrategy):
                     market_question=market.get('question', ''),
                     sport=market.get('sport', 'unknown'),
                     entry_price=current_price,
-                    target_price=current_price * 1.5,  # 50% gain target
-                    stop_loss_price=current_price * 0.6,  # 40% stop
-                    confidence=0.50,
-                    size_usd=self.calculate_size(0.45, Config.MAX_POSITION_USD * 0.2),
-                    rationale=f"Buying deep underdog at {current_price*100:.1f}% for asymmetric upside",
+                    target_price=current_price * 1.4,  # 40% gain target
+                    stop_loss_price=current_price * 0.7,  # 30% stop
+                    confidence=0.55,
+                    size_usd=self.calculate_size(0.50, Config.MAX_POSITION_USD * 0.25),
+                    rationale=f"Buying underdog at {current_price*100:.1f}% for asymmetric upside",
                     metadata={
                         'entry_price': current_price,
                         'strategy_type': 'underdog_value'
@@ -916,7 +916,7 @@ class MarketOnlyStrategy(BaseStrategy):
         orderbook = market.get('orderbook', {})
         spread_percent = orderbook.get('spread_percent', 0)
         
-        if spread_percent >= 4.0 and 0.35 <= current_price <= 0.65:
+        if spread_percent >= Config.SPREAD_SCALP_MIN_PERCENT and 0.35 <= current_price <= 0.65:
             best_bid = orderbook.get('best_bid', current_price * 0.97)
             best_ask = orderbook.get('best_ask', current_price * 1.03)
             

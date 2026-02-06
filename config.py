@@ -42,7 +42,7 @@ class Config:
     FAVORITE_TRAP_ENABLED = os.getenv('FAVORITE_TRAP_ENABLED', 'true').lower() == 'true'
     VOLATILITY_SCALP_ENABLED = os.getenv('VOLATILITY_SCALP_ENABLED', 'true').lower() == 'true'
     LAG_ARBITRAGE_ENABLED = os.getenv('LAG_ARBITRAGE_ENABLED', 'true').lower() == 'true'
-    LIQUIDITY_PROVISION_ENABLED = os.getenv('LIQUIDITY_PROVISION_ENABLED', 'false').lower() == 'true'
+    LIQUIDITY_PROVISION_ENABLED = os.getenv('LIQUIDITY_PROVISION_ENABLED', 'true').lower() == 'true'  # Enabled for more trades
     MARKET_ONLY_ENABLED = os.getenv('MARKET_ONLY_ENABLED', 'true').lower() == 'true'  # Enabled by default!
     
     # ═══════════════════════════════════════════════════════════════════
@@ -66,11 +66,11 @@ class Config:
     # ═══════════════════════════════════════════════════════════════════
     # EXIT PARAMETERS
     # ═══════════════════════════════════════════════════════════════════
-    TAKE_PROFIT_PERCENT = float(os.getenv('TAKE_PROFIT_PERCENT', '20'))
-    STOP_LOSS_PERCENT = float(os.getenv('STOP_LOSS_PERCENT', '10'))
+    TAKE_PROFIT_PERCENT = float(os.getenv('TAKE_PROFIT_PERCENT', '8'))  # Tighter take profit
+    STOP_LOSS_PERCENT = float(os.getenv('STOP_LOSS_PERCENT', '5'))  # Tighter stop loss
     TRAILING_STOP_ENABLED = os.getenv('TRAILING_STOP_ENABLED', 'true').lower() == 'true'
-    TRAILING_STOP_PERCENT = float(os.getenv('TRAILING_STOP_PERCENT', '8'))
-    MAX_HOLD_MINUTES = int(os.getenv('MAX_HOLD_MINUTES', '60'))  # Auto-exit after 1 hour
+    TRAILING_STOP_PERCENT = float(os.getenv('TRAILING_STOP_PERCENT', '3'))  # Tighter trailing
+    MAX_HOLD_MINUTES = int(os.getenv('MAX_HOLD_MINUTES', '45'))  # Shorter hold time
     
     # ═══════════════════════════════════════════════════════════════════
     # TELEGRAM ALERTS
@@ -248,9 +248,9 @@ class Config:
     # ═══════════════════════════════════════════════════════════════════
     # RELAXED THRESHOLDS (for Market Only strategy - more trades!)
     # ═══════════════════════════════════════════════════════════════════
-    MARKET_ONLY_FAVORITE_THRESHOLD = float(os.getenv('MARKET_ONLY_FAVORITE_THRESHOLD', '0.80'))  # Was 0.85
-    MARKET_ONLY_UNDERDOG_THRESHOLD = float(os.getenv('MARKET_ONLY_UNDERDOG_THRESHOLD', '0.20'))  # Was 0.18
-    SPREAD_SCALP_MIN_PERCENT = float(os.getenv('SPREAD_SCALP_MIN_PERCENT', '2.0'))  # Was 2.5
+    MARKET_ONLY_FAVORITE_THRESHOLD = float(os.getenv('MARKET_ONLY_FAVORITE_THRESHOLD', '0.75'))  # Relaxed from 0.80
+    MARKET_ONLY_UNDERDOG_THRESHOLD = float(os.getenv('MARKET_ONLY_UNDERDOG_THRESHOLD', '0.25'))  # Relaxed from 0.20
+    SPREAD_SCALP_MIN_PERCENT = float(os.getenv('SPREAD_SCALP_MIN_PERCENT', '1.5'))  # Relaxed from 2.0
 
     
 

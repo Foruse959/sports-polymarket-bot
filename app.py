@@ -54,6 +54,11 @@ from core.strategies.over_under_strategy import OverUnderStrategy
 from core.strategies.btts_strategy import BTTSStrategy
 from data.team_stats import TeamStatsProvider
 
+# NEW: Import Combo and Pre-Game Value strategies
+from core.strategies.combo_strategy import ComboStrategy
+from core.strategies.pregame_value import PreGameValueStrategy
+
+
 
 
 # Initialize Flask app
@@ -187,7 +192,19 @@ try:
         strategy_engine.strategies.append(btts_strategy)
         print("✅ BTTS Strategy: Enabled")
     
+    # NEW: Initialize Combo Strategy (trades when 2+ strategies agree)
+    combo_strategy = ComboStrategy()
+    strategy_engine.strategies.append(combo_strategy)
+    print("✅ Combo Strategy: Enabled")
+    
+    # NEW: Initialize Pre-Game Value Strategy
+    pregame_strategy = PreGameValueStrategy(team_stats_provider=team_stats_provider)
+    strategy_engine.strategies.append(pregame_strategy)
+    print("✅ Pre-Game Value Strategy: Enabled")
+    
+    print(f"\n🎯 Total strategies loaded: {len(strategy_engine.strategies)}")
     print("✅ All dynamic systems initialized successfully\n")
+
 
     
 except Exception as e:
