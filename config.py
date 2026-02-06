@@ -138,7 +138,8 @@ class Config:
     # ═══════════════════════════════════════════════════════════════════
     # MULTI-SIGNAL ENGINE
     # ═══════════════════════════════════════════════════════════════════
-    MIN_SIGNAL_CONFIDENCE = float(os.getenv('MIN_SIGNAL_CONFIDENCE', '0.6'))
+    MIN_SIGNAL_CONFIDENCE = float(os.getenv('MIN_SIGNAL_CONFIDENCE', '0.5'))  # Relaxed from 0.6
+
     MAX_SIGNALS_PER_SCAN = int(os.getenv('MAX_SIGNALS_PER_SCAN', '5'))
     MAX_CORRELATED_EXPOSURE_USD = float(os.getenv('MAX_CORRELATED_EXPOSURE_USD', '100'))
     DIVERSIFICATION_BONUS = float(os.getenv('DIVERSIFICATION_BONUS', '0.1'))
@@ -216,22 +217,41 @@ class Config:
     MOMENTUM_STRATEGY_ENABLED = os.getenv('MOMENTUM_STRATEGY_ENABLED', 'true').lower() == 'true'
     CONTRARIAN_STRATEGY_ENABLED = os.getenv('CONTRARIAN_STRATEGY_ENABLED', 'true').lower() == 'true'
     
-    # AI Value Edge thresholds
-    AI_MIN_TRADE_CONFIDENCE = float(os.getenv('AI_MIN_TRADE_CONFIDENCE', '0.6'))
-    AI_MIN_EDGE_PERCENT = float(os.getenv('AI_MIN_EDGE_PERCENT', '3'))
+    # NEW: Over/Under and BTTS strategies
+    OVER_UNDER_STRATEGY_ENABLED = os.getenv('OVER_UNDER_STRATEGY_ENABLED', 'true').lower() == 'true'
+    BTTS_STRATEGY_ENABLED = os.getenv('BTTS_STRATEGY_ENABLED', 'true').lower() == 'true'
     
-    # Momentum thresholds
-    MOMENTUM_MIN_STRENGTH = float(os.getenv('MOMENTUM_MIN_STRENGTH', '0.5'))
+    # AI Value Edge thresholds (RELAXED)
+    AI_MIN_TRADE_CONFIDENCE = float(os.getenv('AI_MIN_TRADE_CONFIDENCE', '0.5'))  # Was 0.6
+    AI_MIN_EDGE_PERCENT = float(os.getenv('AI_MIN_EDGE_PERCENT', '2.5'))  # Was 3
+    
+    # Momentum thresholds (RELAXED)
+    MOMENTUM_MIN_STRENGTH = float(os.getenv('MOMENTUM_MIN_STRENGTH', '0.3'))  # Was 0.5
     
     # Contrarian thresholds (RELAXED for more trades)
-    CONTRARIAN_MIN_MOVE = float(os.getenv('CONTRARIAN_MIN_MOVE', '0.04'))  # 4% move triggers
+    CONTRARIAN_MIN_MOVE = float(os.getenv('CONTRARIAN_MIN_MOVE', '0.02'))  # Was 0.04 (2% instead of 4%)
+    
+    # Over/Under thresholds
+    OVER_UNDER_MIN_CONFIDENCE = float(os.getenv('OVER_UNDER_MIN_CONFIDENCE', '0.55'))
+    OVER_UNDER_MIN_EDGE = float(os.getenv('OVER_UNDER_MIN_EDGE', '0.5'))  # 0.5 goals/points
+    
+    # BTTS thresholds
+    BTTS_MIN_CONFIDENCE = float(os.getenv('BTTS_MIN_CONFIDENCE', '0.55'))
+    
+    # ═══════════════════════════════════════════════════════════════════
+    # EMERGENCY TRADE MODE (NEW!) - Triggers when no trades for X hours
+    # ═══════════════════════════════════════════════════════════════════
+    EMERGENCY_TRADE_MODE_ENABLED = os.getenv('EMERGENCY_TRADE_MODE_ENABLED', 'true').lower() == 'true'
+    EMERGENCY_TRADE_HOURS = int(os.getenv('EMERGENCY_TRADE_HOURS', '6'))  # Activate after 6 hours no trades
+    EMERGENCY_THRESHOLD_MULTIPLIER = float(os.getenv('EMERGENCY_THRESHOLD_MULTIPLIER', '0.5'))  # Halve thresholds
     
     # ═══════════════════════════════════════════════════════════════════
     # RELAXED THRESHOLDS (for Market Only strategy - more trades!)
     # ═══════════════════════════════════════════════════════════════════
-    MARKET_ONLY_FAVORITE_THRESHOLD = float(os.getenv('MARKET_ONLY_FAVORITE_THRESHOLD', '0.85'))  # Was 0.92
-    MARKET_ONLY_UNDERDOG_THRESHOLD = float(os.getenv('MARKET_ONLY_UNDERDOG_THRESHOLD', '0.18'))  # Was 0.12
-    SPREAD_SCALP_MIN_PERCENT = float(os.getenv('SPREAD_SCALP_MIN_PERCENT', '2.5'))  # Was 4.0
+    MARKET_ONLY_FAVORITE_THRESHOLD = float(os.getenv('MARKET_ONLY_FAVORITE_THRESHOLD', '0.80'))  # Was 0.85
+    MARKET_ONLY_UNDERDOG_THRESHOLD = float(os.getenv('MARKET_ONLY_UNDERDOG_THRESHOLD', '0.20'))  # Was 0.18
+    SPREAD_SCALP_MIN_PERCENT = float(os.getenv('SPREAD_SCALP_MIN_PERCENT', '2.0'))  # Was 2.5
+
     
 
     @classmethod

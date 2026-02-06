@@ -48,6 +48,13 @@ from core.strategies.ai_value_edge import AIValueEdgeStrategy
 from core.strategies.momentum_strategy import MomentumStrategy
 from core.strategies.contrarian_strategy import ContrarianStrategy
 
+# NEW: Import Over/Under and BTTS strategies
+from core.market_type_detector import MarketTypeDetector
+from core.strategies.over_under_strategy import OverUnderStrategy
+from core.strategies.btts_strategy import BTTSStrategy
+from data.team_stats import TeamStatsProvider
+
+
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -160,7 +167,28 @@ try:
         strategy_engine.strategies.append(contrarian_strategy)
         print("✅ Contrarian Strategy: Enabled")
     
+    # NEW: Initialize Market Type Detector and Team Stats
+    market_type_detector = MarketTypeDetector()
+    team_stats_provider = TeamStatsProvider()
+    print("✅ Market Type Detector: Enabled")
+    print("✅ Team Stats Provider: Enabled")
+    
+    # NEW: Initialize Over/Under Strategy
+    over_under_strategy = None
+    if Config.OVER_UNDER_STRATEGY_ENABLED:
+        over_under_strategy = OverUnderStrategy(team_stats_provider=team_stats_provider)
+        strategy_engine.strategies.append(over_under_strategy)
+        print("✅ Over/Under Strategy: Enabled")
+    
+    # NEW: Initialize BTTS Strategy
+    btts_strategy = None
+    if Config.BTTS_STRATEGY_ENABLED:
+        btts_strategy = BTTSStrategy(team_stats_provider=team_stats_provider)
+        strategy_engine.strategies.append(btts_strategy)
+        print("✅ BTTS Strategy: Enabled")
+    
     print("✅ All dynamic systems initialized successfully\n")
+
     
 except Exception as e:
     print(f"⚠️ Dynamic engine initialization failed: {e}")
@@ -184,6 +212,12 @@ except Exception as e:
     ai_value_strategy = None
     momentum_strategy = None
     contrarian_strategy = None
+    # NEW: Fallback for Over/Under and BTTS
+    market_type_detector = MarketTypeDetector()  # Always useful
+    team_stats_provider = None
+    over_under_strategy = None
+    btts_strategy = None
+
 
 
 # State
@@ -707,6 +741,15 @@ def scanner_loop():
             # NEW: Enrich markets with price history data (enables momentum/contrarian)
             if price_history:
                 markets = price_history.enrich_markets(markets)
+            
+            # NEW: Enrich markets with market type (enables over/under & BTTS)
+            if market_type_detector:
+                markets = market_type_detector.enrich_markets(markets)
+                ou_count = sum(1 for m in markets if m.get('market_type') == 'over_under')
+                btts_count = sum(1 for m in markets if m.get('market_type') == 'btts')
+                if ou_count > 0 or btts_count > 0:
+                    print(f"📊 Found {ou_count} over/under markets, {btts_count} BTTS markets")
+
             
             # Update favorite flip strategy with current prices
             if favorite_flip_strategy:
