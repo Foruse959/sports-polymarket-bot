@@ -28,8 +28,10 @@ class ContrarianStrategy(BaseStrategy):
     """
     
     def __init__(self):
-        super().__init__()
-        self.name = "contrarian"
+        super().__init__(
+            name="Contrarian",
+            description="Fades extreme price movements - bets against the crowd"
+        )
         # Minimum price change to trigger (5%)
         self.min_move = float(os.getenv('CONTRARIAN_MIN_MOVE', '0.05'))
         

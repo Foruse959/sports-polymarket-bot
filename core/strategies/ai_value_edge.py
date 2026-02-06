@@ -36,8 +36,10 @@ class AIValueEdgeStrategy(BaseStrategy):
         Args:
             ai_analyzer: AIAnalyzer instance (optional - will create if needed)
         """
-        super().__init__()
-        self.name = "ai_value_edge"
+        super().__init__(
+            name="AI Value Edge",
+            description="AI-powered market value detection"
+        )
         self.ai_analyzer = ai_analyzer
         self.min_confidence = float(os.getenv('AI_MIN_TRADE_CONFIDENCE', '0.6'))
         self.min_edge = float(os.getenv('AI_MIN_EDGE_PERCENT', '3')) / 100  # 3%

@@ -28,8 +28,10 @@ class MomentumStrategy(BaseStrategy):
     """
     
     def __init__(self):
-        super().__init__()
-        self.name = "momentum"
+        super().__init__(
+            name="Momentum",
+            description="Trades in the direction of sustained price movement"
+        )
         self.min_strength = float(os.getenv('MOMENTUM_MIN_STRENGTH', '0.5'))
         self.min_moves = int(os.getenv('MOMENTUM_MIN_MOVES', '3'))
         
