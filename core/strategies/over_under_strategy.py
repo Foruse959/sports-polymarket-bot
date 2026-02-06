@@ -30,8 +30,10 @@ class OverUnderStrategy(BaseStrategy):
         Args:
             team_stats_provider: TeamStatsProvider instance
         """
-        super().__init__()
-        self.name = "over_under"
+        super().__init__(
+            name="Over/Under",
+            description="Trades on over/under goal/point markets using team statistics"
+        )
         self.team_stats = team_stats_provider
         
         # Minimum confidence to trade
@@ -43,6 +45,9 @@ class OverUnderStrategy(BaseStrategy):
         # Stats
         self.signals_generated = 0
         self.last_signal_time = None
+        
+        # Team name extraction patterns
+        self.vs_pattern = re.compile(r'(.+?)\s+(?:vs?\.?|versus|at|@)\s+(.+?)(?:\s*[-:,\?]|$)', re.IGNORECASE)
         
         # Team name extraction patterns
         self.vs_pattern = re.compile(r'(.+?)\s+(?:vs?\.?|versus|at|@)\s+(.+?)(?:\s*[-:,\?]|$)', re.IGNORECASE)

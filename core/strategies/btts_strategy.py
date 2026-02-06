@@ -30,8 +30,10 @@ class BTTSStrategy(BaseStrategy):
         Args:
             team_stats_provider: TeamStatsProvider instance
         """
-        super().__init__()
-        self.name = "btts"
+        super().__init__(
+            name="BTTS",
+            description="Trades on Both Teams To Score markets using team scoring history"
+        )
         self.team_stats = team_stats_provider
         
         # Minimum confidence to trade

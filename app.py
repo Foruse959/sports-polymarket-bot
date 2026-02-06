@@ -82,6 +82,15 @@ else:
 
 alerts = TelegramAlerts()
 
+# Initialize Telegram Bot with /info command
+try:
+    from alerts.telegram_bot import get_telegram_bot
+    telegram_bot = get_telegram_bot()
+    telegram_bot.start()  # Start polling for commands
+except Exception as e:
+    print(f"⚠️ Telegram Bot init failed: {e}")
+    telegram_bot = None
+
 # NEW: Initialize dynamic components with graceful degradation
 try:
     print("\n🚀 Initializing dynamic autonomous systems...")
